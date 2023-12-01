@@ -1,0 +1,34 @@
+= SHIMMER-微光
+
+该工程包含SHIMMER(微光)项目的使用手册、同时也会陆续的加入个人开发过程中使用到的一些技术文档。
+
+== 使用
+
+本文档基于asciidoc编写。可以打包成html、pdf、epub等多种格式。同时也集成了site目标。
+
+=== asciidoc
+
+可以通过以下命令来完成 html、pdf、epub等格式文档的输出。
+
+[source,shell]
+----
+mvn process-resources
+----
+
+=== site
+
+可以通过执行`site`名称完成站点的输出
+
+[source,shell]
+----
+mvn site
+----
+
+=== 完整输出
+
+为了能够同时输出`site`和 `asciidoctor:process-asciidoc` 两个阶段生成的文档，我们将这两个阶段都定义到了`package`阶段中，因此我们亦可以通过以下的命令完成同时转换，并将编译好的内容输出到dist目录中，用于发布。
+
+[source,shell]
+----
+mvn package
+----

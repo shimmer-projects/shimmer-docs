@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="${project.name}">
+
+    <body>
+        <menu name="SHIMMER">
+            <item name="初衷" href="index.html"/>
+            <item name="SHIMMER项目文档" href="shimmer/introduction.html" collapse="true">
+                <item name="模块说明" href="shimmer/modules.html"/>
+                <item name="历史版本" href="shimmer/version.html"/>
+            </item>
+        </menu>
+    </body>
+
+    <skin>
+        <groupId>org.apache.maven.skins</groupId>
+        <artifactId>maven-fluido-skin</artifactId>
+        <version>1.11.0</version>
+    </skin>
+</project>

@@ -1,0 +1,41 @@
+= SHIMMER-微光
+于海洋 <yu_haiyang@foxmail.com>
+v1.0.0-snapshot, 2023-11-29
+:doctype: book
+:lang: zh-Hans-CN
+:favicon: image::favicon.ico[ico]
+:title-logo-image: image::logo.png[logo]
+:imagesdir: images
+:toc: left
+:toc-title: 目录
+:toclevels: 4
+:icons: font
+:icon-set: fas
+:idseparator: -
+:appendix-caption: 附录
+:title-page:
+:sectnums:
+:sectanchors:
+:sectlinks:
+:experimental:
+:hardbreaks:
+
+
+include::index.adoc[]
+
+
+[#introduction]
+== 简介
+include::shimmer/introduction.adoc[]
+
+<<<
+
+[#modules]
+== 模块说明
+include::shimmer/modules.adoc[]
+
+
+[appendix]
+[#appendix-1]
+== 版本历史
+include::shimmer/version.adoc[]
