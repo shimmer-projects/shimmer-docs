@@ -79,6 +79,17 @@
         <defaultGoal>process-resources</defaultGoal>
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <configuration>
+                    <filesets>
+                        <fileset>
+                            <directory>${basedir}/docs</directory>
+                        </fileset>
+                    </filesets>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>com.googlecode.maven-download-plugin</groupId>
                 <artifactId>download-maven-plugin</artifactId>
                 <version>${download-maven-plugin.version}</version>
@@ -282,7 +293,6 @@
                     </execution>
                 </executions>
             </plugin>
-
             <!-- 整合maven site插件直接打包成站点 -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -340,20 +350,40 @@
                         <configuration>
                             <target>
                                 <!-- 复制shimmer的asciidoc文档 -->
-                                <copy todir="dist/shimmer/${project.version}/docs">
-                                    <fileset dir="${project.build.directory}/shimmer">
-                                        <exclude name="shimmer" />
-                                    </fileset>
-                                </copy>
+                                <!-- <copy todir="docs/book">-->
+                                <!--     <fileset dir="${project.build.directory}/shimmer">-->
+                                <!--         <exclude name="shimmer" />-->
+                                <!--     </fileset>-->
+                                <!-- </copy>-->
                                 <!-- 复制shimmer的站点文档 -->
-                                <copy todir="dist/shimmer/${project.version}/site">
+                                <copy todir="docs">
                                     <fileset dir="${project.build.directory}/site"/>
                                 </copy>
                             </target>
                         </configuration>
                     </execution>
                 </executions>
-
+            </plugin>
+            <!--打软件包插件 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>3.6.0</version>
+                <configuration>
+                    <appendAssemblyId>false</appendAssemblyId>
+                    <descriptors>
+                        <descriptor>assembly.xml</descriptor>
+                    </descriptors>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
