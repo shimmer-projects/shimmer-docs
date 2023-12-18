@@ -1,6 +1,6 @@
 = SHIMMER-微光
 于海洋 <yu_haiyang@foxmail.com>
-v1.0.0-snapshot, 2023-11-29
+v1.0.0-SNAPSHOT, 2023-11-29
 :doctype: book
 :lang: zh-Hans-CN
 :favicon: image::favicon.ico[ico]

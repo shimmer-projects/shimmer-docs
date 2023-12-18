@@ -4,10 +4,10 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.shimmer</groupId>
     <artifactId>shimmer-docs</artifactId>
-    <version>1.0.0-snapshot</version>
+    <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>SHIMMER-微光</name>
-    <url>https://gitee.com/shimmer-projects</url>
+    <url>https://github.com/shimmer-projects</url>
     <description>shimmer是一个企业开发通用实现脚手架，包含了一个完整网站大部分无关于业务的系统核心功能，只要基于shimmer规范进行编码，便可以快速实现业务迭代。</description>
     <properties>
         <!-- Java版本设置 -->
@@ -61,9 +61,9 @@
     <!-- 项目仓库信息 -->
     <scm>
         <tag>master</tag>
-        <url>https://gitee.com/shimmer-projects/shimmer-docs</url>
-        <connection>scm:git:https://gitee.com/shimmer-projects/shimmer-docs.git</connection>
-        <developerConnection>scm:git:git@gitee.com:shimmer-projects/shimmer-docs.git</developerConnection>
+        <url>https://github.com/shimmer-projects/shimmer-docs</url>
+        <connection>scm:git:https://github.com/shimmer-projects/shimmer-docs.git</connection>
+        <developerConnection>scm:git:git@github.com:shimmer-projects/shimmer-docs.git</developerConnection>
     </scm>
 
     <reporting>
