@@ -1,0 +1,45 @@
+== 模块说明
+
+=== shimmer-utils
+
+通用工具包，一套实用的工具类
+
+=== shimmer-core
+
+基于springboot开发的项目的核心包，项目统一规范封装
+
+=== shimmer-docs
+
+项目是开发使用说明文档
+
+=== shimmer-ui
+
+项目的前端代码，基于VUE开发
+
+=== shimmer-runner
+
+项目的启动入口工程
+
+=== shimmer-preferences
+
+首选项工程，项目核心配置管理工程
+
+=== shimmer-authority
+
+权限认证管理工程
+
+=== shimmer-dataway
+
+API快速开发模型管理
+
+=== shimmer-filestore
+
+文件管理系统
+
+=== shimmer-executor
+
+一个可独立运行的测试包
+
+=== shimmer-dependencies
+
+所有模块统一bom管理

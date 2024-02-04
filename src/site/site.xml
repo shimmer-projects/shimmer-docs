@@ -6,6 +6,7 @@
             <item name="初衷" href="index.html"/>
             <item name="SHIMMER项目文档" href="shimmer/introduction.html" collapse="true">
                 <item name="模块说明" href="shimmer/modules.html"/>
+                <item name="开发计划" href="shimmer/plan.html"/>
                 <item name="历史版本" href="shimmer/version.html"/>
             </item>
         </menu>
