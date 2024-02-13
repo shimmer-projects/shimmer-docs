@@ -1,0 +1,36 @@
+所有接口返回数据都将会包装成ApiResult对象返回，无论是返回的是Json,String,void, Pager等
+
+[source,json]
+----
+{
+  "code": "200",
+  "desc": "success",
+  "time": 1707650572317,
+  "cost": 3077,
+  "page": {
+  },
+  "data": {
+  }
+}
+----
+
+Pager对象的结构如下
+
+[source,json]
+----
+{
+  "currentPage": 1,
+  "pageSize": 10,
+  "pageCount": 10,
+  "total": 100,
+  "first": true,
+  "last": true,
+  "next": true,
+  "previous": true,
+  "data": []
+}
+----
+
+pager对象在包装之后会进行拆分处理，将data属性移出到ApiResult.data属性上，将其他属性赋值到ApiResult.page属性上。
+
+NoResponseWrapper注解是跳过包装的注解，如果controller类或者controller中的接口方法使用该注解标注，那么该类中的接口或者单独被标注的接口将不会被包装，返回接口的原始值

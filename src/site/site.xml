@@ -4,10 +4,16 @@
     <body>
         <menu name="SHIMMER">
             <item name="初衷" href="index.html"/>
-            <item name="SHIMMER项目文档" href="shimmer/introduction.html" collapse="true">
-                <item name="模块说明" href="shimmer/modules.html"/>
+            <item name="SHIMMER项目文档" href="shimmer/introduction.html" collapse="false">
                 <item name="开发计划" href="shimmer/plan.html"/>
+                <item name="模块说明" href="shimmer/modules.html"/>
+                <item name="API规范" href="shimmer/api-specification.html"/>
+                <item name="参数校验" href="shimmer/validation.html"/>
+                <item name="响应包装" href="shimmer/response-wrapper.html"/>
                 <item name="历史版本" href="shimmer/version.html"/>
+            </item>
+            <item name="JAVA相关技术文档" href="java/introduction.html" collapse="true">
+                <item name="JDK" href="shimmer/plan.html"/>
             </item>
         </menu>
     </body>

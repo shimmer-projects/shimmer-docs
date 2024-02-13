@@ -1,0 +1,70 @@
+=== URI规范
+
+一个后端接口大致分为四个部分组成：接口地址（url）、接口请求方式（get、post等）、请求数据（request）、响应数据（response）。虽然说后端接口的编写并没有统一规范要求，而且如何构建这几个部分也都是仁者见仁智者见智，没有什么“一定是最好的”标准，但其中最重要的关键点就是看是否规范。
+
+URI的设计一定要满足以下规范
+
+1. 命名要有意义。
+2. 可读性要强，不要搞一些不知所谓的名称和容易拼错的外语，URI的格式按照以下结构
+
+    协议://地址:端口/应用/模块/业务/动作?参数
+    https://127.0.0.1:9527/cheer/user/manage/detail?id=1
+
+3. URI的结尾不要添加"/"，这样会给人一种目录的感觉,还有可能多搞一次301跳转.
+4. URI中不允许使用"_"，而是使用"-"减少URI的误读性，有时文本查看器中的下划线特效可能会遮蔽掉"_"。
+
+    错误：http://127.0.0.1:9527/cheer/user/manage/get_detail_by_id
+    正确：http://127.0.0.1:9527/cheer/user/manage/get-detail-by-id
+
+5. URI必须全部使用小写字母和有实际意义的数字，不允许使用大写和除了"-"以外的任何特殊字符。
+
+    错误：http://127.0.0.1:9527/cheer/user/Manage/GetDetail_ById
+    正确：http://127.0.0.1:9527/cheer/user/manage/get-detail-by-id
+
+6. 参数列表要encode；
+7. URI中的名词表示资源集合，使用复数形式。
+8. 避免层级过深的URI
+
+    在url中表达层级，用于 按实体关联关系进行对象导航 ，一般根据id导航。
+    过深的导航容易导致url膨胀，不易维护，如 GET /zoos/1/areas/3/animals/4 ，尽量使用查询参数代替路径中的实体导航，如 GET/animals?zoo=1&area=3 ；
+
+=== Java接口编码规范
+
+通常情况下，我们在开发接口的时候，基本使用的接口就是GET POST PUT DELETE 等情况，还有文件上传下载等相对特殊一下的POST和GET请求； 我们定义了以下组合注解：
+
+[source,text]
+----
+@Delete
+@Download
+@Get
+@Post
+@Put
+@Rest
+@Upload
+----
+
+这些注解对RequestMapping中的部分参数进行固定化设置。只保留部分必要的修改属性，这样可以简化使用，同时也为了保持统一的风格。同时让注解也将swagger注解组合进来了通过这一个注解完成整个资源的描述。另外也为导入导出定义了语义化注解，使API清晰明了。 正常情况下我们定义一个接口的时候，可能需要定义以下多个注解来对接口进行包装描述
+
+[source,java]
+----
+@GetMapping("fetchUserList")
+@ResponseBody
+@Operation(summary = "查询用户列表")
+public Map<String, Object> fetchUserList() {
+    // todo any thing what you want to do.
+    retrun null;
+}
+----
+
+使用我们综合包装的接口之后，我们定义一个接口的时候只需要使用一个注解通过不同的参数来进行标注，而不需要去记下一堆注解
+
+[source,java]
+----
+@GetResource(path = "fetchUserList", name = "查询用户列表", description = "查询用户列表")
+public Map<String, Object> fetchUserList() {
+    // todo any thing what you want to do.
+    return null;
+}
+----
+
+整合后的注解，与原生的方式对比，确实存在一些复杂与不直观性，但是这种方式可以对必须包含的注解在编码阶段进行一些默认值的绑定，以及编码阶段的提示性。可以达到对编码规范的统一。同时也对导入导出等方式进行了一些注解的独立化，把通用性的配置进行默认配置，编码过程接口风格也统一起来，同时也语义化。任何人看到代码都不会陌生。

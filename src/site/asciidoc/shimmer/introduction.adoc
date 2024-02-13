@@ -1,0 +1,5 @@
+SHIMMER(微光)是一个基于Spring Boot体系封装开发的一套基础系统，提供一站式统一返回值封装、全局异常处理、自定义异常错误码等功能，使用SHIMMER进行web开发不仅可以节省大量的时间，还可以提高代码质量，使代码逻辑更清晰。
+
+GitHub仓库地址：https://github.com/shimmer-projects/
+
+欢迎试用和star!

@@ -1,0 +1,678 @@
+=== 参数校验
+
+对于一套稳健可靠的系统而言，参数校验是一个看似可有可无但是至关重要一环。任何一个恶意的操作，都可以让你的系统数据混乱，代码频出异常，甚至可能导致系统的崩溃。 系统中接口成百上千，甚至更多。每一个接口可能都需要一些参数的校验，如果我们在每一个接口中都编写校验逻辑这种样版代码会很多，让校验代码混入到业务逻辑中，使代码难于阅读和维护。如果代码的校验逻辑考虑的不够完善，甚至校验代码都会产生一系列异常问题。 因此，使用一套完善、可靠、清晰的参数校验系统是至关重要的。Java API规范(JSR303)定义了Bean校验的标准validation-api，但没有提供实现。hibernate-validation是对这个规范的实现，并增加了校验注解如@Email、@Length等。Spring Validation是对hibernate-validation的二次封装，用于支持spring mvc参数自动校验。以下我们整理说明该框架的使用方式。
+
+==== **常用校验注解**
+
+|===
+| **校验注解** | **适用类型** | **注解说明**
+
+
+| **JSR提供的校验注解：** |  |
+| @AssertFalse | Boolean,boolean | 被注释的元素必须为false
+| @AssertTrue | Boolean,boolean | 被注释的元素必须为true
+| @NotNull | 任意类型 | 被注释的元素必须不为 null
+| @Null | 任意类型 | 被注释的元素必须为 null
+| @Min(value=值) | BigDecimal，BigInteger, byte,short, int, long，等任何Number或CharSequence（存储的是数字）子类型 | 被注释的元素必须是一个数字，其值必须大于等于指定的最小值
+| @Max（value=值） | 和@Min要求一样 | 被注释的元素必须是一个数字，其值必须小于等于指定的最大值
+| @DecimalMin(value=值) | 和@Min要求一样 | 被注释的元素必须是一个数字，其值必须大于等于指定的最小值
+| @DecimalMax(value=值) | 和@Min要求一样 | 被注释的元素必须是一个数字，其值必须小于等于指定的最大值
+| @Digits(integer=整数位数, fraction=小数位数) | 和@Min要求一样 | 被注释的元素必须是一个数字，其值的整数位数和小数位数必须在指定限制之内
+| @Size(min=下限, max=上限) | 字符串、Collection、Map、数组等 | 验证注解的元素值的在min和max（包含）指定区间之内，如字符长度、集合大小
+| @Past | java.util.Date,java.util.Calendar;Joda Time类库的日期类型 | 被注释的元素必须是一个过去的日期
+| @PastOrPresent | java.util.Date,java.util.Calendar;Joda Time类库的日期类型 | 被注释的元素必须是一个过去的日期(包含当前时间)
+| @Future | 与@Past要求一样 | 被注释的元素必须是一个将来的日期
+| @FutureOrPresent | 与@PastOrPresent要求一样 | 被注释的元素必须是一个将来的日期(包含当前时间)
+| @Pattern(regexp=正则表达式,flag=标志的模式) | String，任何CharSequence的子类型 | 被注释的元素必须与指定的正则表达式匹配
+| **Hibernate Validator提供的校验注解： ** |  |
+| @NotBlank | CharSequence子类型 | 验证注解的元素值不为空（不为null、去除首位空格后长度为0），不同于@NotEmpty，@NotBlank只应用于字符串且在比较时会去除字符串的首位空格
+| @NotEmpty | CharSequence子类型、Collection、Map、数组 | 验证注解的元素值不为null且不为空（字符串长度不为0、集合大小不为0）
+| @Length(min=下限, max=上限) | CharSequence子类型 | 验证注解的元素值长度在min和max区间内
+| @Range(min=最小值, max=最大值) | BigDecimal,BigInteger,CharSequence, byte, short, int, long等原子类型和包装类型 | 验证注解的元素值在最小值和最大值之间
+| @Email(regexp=正则表达式,flag=标志的模式) | CharSequence子类型（如String） | 被注释的元素必须是电子邮箱地址，也可以通过regexp和flag指定自定义的email格式
+| Negative | 与@Min要求一样 | 验证注解的元素值必须是负数
+| NegativeOrZero | 与@Min要求一样 | 验证注解的元素值必须是符数和0
+| Positive | 与@Min要求一样 | 验证注解的元素值必须是正数
+| PositiveOrZero | 与@Min要求一样 | 验证注解的元素值必须是正数和0
+| URL(protocol=,host=,port=, regexp=, flags=) | String，任何CharSequence的子类型 | 被注释的字符串必须是一个有效的url
+| @Valid | 任何非原子类型 | 指定递归验证关联的对象；如用户对象中有个地址对象属性，如果想在验证用户对象时一起验证地址对象的话，在地址对象上加@Valid注解即可级联验证
+| **自定义的验证注解：** |  |
+| Enumerable | 和@Min要求一样 | 判断值是否存在枚举对象
+| Exist | 和@Min要求一样 | 判断值是否在数据库中已经存在
+| IdentityCard | String，任何CharSequence的子类型 | 判断身份证号是否合法
+| MobileNumber | String，任何CharSequence的子类型 | 判断手机号是否合法
+|===
+
+==== **基本使用**
+
+需要在spring-boot项目中引入以下依赖
+
+[source,xml]
+----
+<dependency>
+  <groupId>org.springframework.boot</groupId>
+  <artifactId>spring-boot-starter-validation</artifactId>
+</dependency>
+<dependency>
+  <groupId>org.hibernate.validator</groupId>
+  <artifactId>hibernate-validator</artifactId>
+</dependency>
+----
+
+通常在controller中我们接收参数的方式主要有两种： 1. 将需要接收的参数封装到一个对象中。
+
+[source,java]
+----
+@Data
+public class UserRequest {
+    private String name;
+    private Integer age;
+    private String email;
+}
+
+@RestController
+@RequestMapping("/user")
+public class UserController {
+    @PostMapping("/insert")
+    public Long insert(@RequestBody UserRequest user) {
+        // TODO insert
+        retrun 1;
+    }
+}
+----
+
+2. 将需要接受的参数全部定义在方法参数中。
+
+[source,java]
+----
+@RestController
+@RequestMapping("/user")
+public class UserController {
+    @PostMapping("/insert")
+    public Long insert(String name, Integer age, String email) {
+        // TODO insert
+        retrun 1;
+    }
+}
+----
+
+    当然，可能有些时候并不是通过springboot直接接收参数，而是在参数列表中注入HttpServletRequest对象，然后手动获取相关参数。这种方式获取参数，自动化的校验方案显然是行不通的，但可以通过后文中详细说明的编程式校验来实现。
+
+对于以上两种参数的接收方式，采用的校验方式也不同。 第一种方式我们需要在接受实体中对每一个需要校验的字段添加对应的校验注解，然后在controller对应的参数实体上添加@Validated注解或者@Valid注解，即可达到校验的作用。
+
+[source,java]
+----
+@Data
+public class UserRequest {
+    @NotNull
+    @Length(min=5, max=20)
+    private String name;
+    @Range(min=0, max=100)
+    private Integer age;
+    @Email
+    private String email;
+    @Pattern(regexp = "^1(3|4|5|7|8)\d{9}$",message = "手机号码格式错误")
+    @NotBlank(message = "手机号码不能为空")
+    private String phone;
+}
+@RestController
+@RequestMapping("/user")
+public class UserController {
+    @PostMapping("/insert")
+    public Long insert(@RequestBody @Validated UserRequest user) {
+        // TODO insert
+        retrun 1;
+    }
+}
+----
+
+如果校验失败将会抛出MethodArgumentNotValidException异常。 第二种方式需要在每一个参数前添加对应的校验注解，让后在controller类上添加@Validated注解，即可达到校验的作用。
+
+[source]
+----
+@RestController
+@RequestMapping("/user")
+@Validated
+public class UserController {
+     @PostMapping("/insert")
+     public Long insert(
+         @NotNull @Length(min=5, max=20) String name,
+         @Range(min=0, max=100) Integer age,
+         @Email String email) {
+         // TODO insert
+         retrun 1;
+     }
+ }
+----
+
+如果校验失败将会抛出ConstraintViolationException异常。 当然，不建议两种方式混合使用 因为使用RequestBody接收参数，和方法参数接收参数时校验的实现方式是不同的。@RequestBody是通过RequestResponseBodyMethodProcessor#resolveArgument 这个方法在封装参数时调用validateIfApplicable(binder, parameter);方法实现的校验；而方法参数校验是通过MethodValidationPostProcessor#afterPropertiesSet动态注册AOP切面，然后使用MethodValidationInterceptor对切点方法织入增强实现的。如果一个参数列表中既使用@RequestBody又使用方法参数，在没有使用快速失败的情况下，可能会导致返回的失败结果不完整，校验@RequestBody参数失败之后，就会抛出MethodArgumentNotValidException异常，而不会继续向下执行参数列表的赋值和校验。
+
+==== 校验结果的获取
+
+参数校验的获取校验结果的方式有两种：
+
+- Validator + BindResult校验
+- Validator + 自动抛出异常
+
+使用Validator+ BindingResult已经是非常方便实用的参数校验方式了，在实际开发中也有很多项目就是这么做的，不过这样还是不太方便，因为你每写一个接口都要添加一个BindingResult参数，然后再提取错误信息返回给前端。
+
+[source,java]
+----
+@Data
+public class UserRequest {
+    @NotNull
+    @Length(min=5, max=20)
+    private String name;
+    @Range(min=0, max=100)
+    private Integer age;
+    @Email
+    private String email;
+}
+@RestController
+@RequestMapping("/user")
+public class UserController {
+    @PostMapping("/insert")
+    public Result insert(@RequestBody @Validated UserRequest user, Bindingresult bindingResult) {
+      // 如果有参数校验失败，会将错误信息封装成对象组装在BindingResult里
+      List<ObjectError> allErrors = bindingResult.getAllErrors();
+      if(!allErrors.isEmpty()){
+      	// 返回默认的错误信息
+          return allErrors.stream()
+              .map(o->o.getDefaultMessage())
+              .collect(Collectors.toList()).toString();
+      }
+      return usernService.insert(user);
+    }
+}
+----
+
+前文示例中使用的是Validator + 自动抛出异常。我们可以使用springboot提供的统一异常处理机制来完成异常参数的封装。后文中回详细说明。
+
+==== 手动校验
+
+可能在某些场景下需要我们手动校验，即使用校验器对需要被校验的实体发起validate，同步获得校验结果。理论上我们既可以使用Hibernate Validation提供Validator，也可以使用Spring对其的封装。在spring构建的项目中，提倡使用经过spring封装过后的方法，这里两种方法都介绍下：
+
+[source,java]
+----
+Foo foo = new Foo();
+foo.setAge(22);
+foo.setEmail("000");
+ValidatorFactory vf = Validation.buildDefaultValidatorFactory();
+Validator validator = vf.getValidator();
+Set<ConstraintViolation<Foo>> set = validator.validate(foo);
+for (ConstraintViolation<Foo> constraintViolation : set) {
+    System.out.println(constraintViolation.getMessage());
+}
+----
+
+由于依赖了Hibernate Validation框架，我们需要调用Hibernate相关的工厂方法来获取validator实例，从而校验。 在spring framework文档的Validation相关章节，可以看到描述了spring对validation全面支持JSR-303、JSR-349的标准，并且封装了LocalValidatorFactoryBean作为validator的实现。值得一提的是，这个类的责任其实是非常重大的，他兼容了spring的validation体系和hibernate的validation体系，也可以被开发者直接调用，代替上述的从工厂方法中获取的hibernate validator。由于我们使用了springboot，会触发web模块的自动配置，LocalValidatorFactoryBean已经成为了Validator的默认实现，使用时只需要自动注入即可。
+
+[source,java]
+----
+// 此处校验接口最终的实现类便是LocalValidatorFactoryBean。
+@Autowired
+Validator globalValidator;
+
+@RequestMapping("/validate")
+public String validate() {
+    Foo foo = new Foo();
+    foo.setAge(22);
+    foo.setEmail("000");
+
+    Set<ConstraintViolation<Foo>> set = globalValidator.validate(foo);<2>
+    for (ConstraintViolation<Foo> constraintViolation : set) {
+        System.out.println(constraintViolation.getMessage());
+    }
+
+    return "success";
+}
+----
+
+使用过Validator接口的读者会发现有两个接口，一个是位于jakarta.validation包下，另一个位于org.springframework.validation包下，注意我们这里使用的是前者jakarta.validation，后者是spring自己内置的校验接口，LocalValidatorFactoryBean同时实现了这两个接口。
+
+==== 基于方法校验
+
+[source,java]
+----
+@RestController
+@Validated <1>
+public class BarController {
+
+    @RequestMapping("/bar")
+    public @NotBlank <2> String bar(@Min(18) Integer age <3>) {
+        System.out.println("age : " + age);
+        return "";
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public Map handleConstraintViolationException(ConstraintViolationException cve){
+        Set<ConstraintViolation<?>> cves = cve.getConstraintViolations(); <4>
+        for (ConstraintViolation<?> constraintViolation : cves) {
+            System.out.println(constraintViolation.getMessage());
+        }
+        Map map = new HashMap();
+        map.put("errorCode",500);
+        return map;
+    }
+
+}
+----
+
+<1> 为类添加@Validated注解
+<2> <3> 校验方法的返回值和入参
+<4> 添加一个异常处理器，可以获得没有通过校验的属性相关信息
+
+基于方法的校验，个人不推荐使用，感觉和项目结合的不是很好。
+
+==== **分组校验**
+
+在实际项目中，可能多个方法需要使用同一个类来接收参数，而不同方法的校验规则很可能是不一样的。这个时候，简单地在类的字段上加约束注解无法解决这个问题。因此，spring-validation支持了分组校验的功能，专门用来解决这类问题。还是上面的例子，比如保存User的时候，User的id是可空的，但是更新User的时候，User的id的值必须>=1L；其它字段的校验规则在两种情况下一样。这个时候就可以使用分组校验。为每一个校验注解添加groups属性，并指定分组的class,任意接口类的class都可以，validation会为相同的class归为一组。当然，每一个注解都可以指定多个分组，这样就可以自由灵活的进行组合字段的校验规则。定义完之后，我们需要在controller接口的参数列表中该参数实体的@Validated注解中指定需要使用的分组规则。 代码示例如下：
+
+[source,java]
+----
+@Data
+public class UserRequest {
+    @NotNull(groups={ValidatorGroup.Update.class})
+    @Min(value="1", groups={ValidatorGroup.Update.class})
+    private Long id;
+    @NotNull(groups={ValidatorGroup.Insert.class, ValidatorGroup.Update.class})
+    @Length(min=5, max=20, groups={ValidatorGroup.Insert.class, ValidatorGroup.Update.class})
+    private String name;
+    @Range(min=0, max=100, groups={ValidatorGroup.Insert.class, ValidatorGroup.Update.class})
+    private Integer age;
+    @Email(groups={ValidatorGroup.Insert.class, ValidatorGroup.Update.class}
+           private String email;
+}
+
+@RestController
+@RequestMapping("/user")
+public class UserController {
+    @PostMapping("/insert")
+    public Long insert(@RequestBody @Validated(ValidatorGroup.Insert.class) UserRequest user) {
+        // TODO insert
+        retrun ApiResult.ok();
+    }
+    @PostMapping("/update")
+    public Long update(@RequestBody @Validated(ValidatorGroup.Update.class) UserRequest user) {
+        // TODO update
+        retrun ApiResult.ok();
+    }
+}
+----
+
+	因为分组信息在系统中可能频繁使用，还有在嵌套中也会使用。如果每个人或者是每个接口都单独定义组的信息会比较混乱。甚至会有名称的相同等问题导致使用和维护起来会出现引用错误等问题。因此我们在系统中定义了ValidatorGroup类，该类中，定义了一些基本操作的分组，这样，所有的参数校验都使用通用的分组就会简化开发中很多重复的类的定义，也简化了嵌套校验中的多个参数类使用不同校验组时，参数列表中需要指定多个校验组的情况。
+
+    需要注意的是：
+        如果指定分组之后，就要对所有的校验注解都指定分组，否则，不指定分组的校验注解，只在@Validated注解不指定分组时才生效，**不要有不指定分组的校验规则是所有分组的通用规则的一种的错误思维认知**。
+    当然也可以通过让分组接口继承jakarta.validation.groups.Default接口，来继承默认组校验。
+
+[source,java]
+----
+public interface Update extends Default {
+}
+@Data
+public class User {
+    @NotNull(message = "用户id不能为空",groups = Update.class)
+    private Long id;
+  ......
+}
+@PostMapping("update")
+public String update(@Validated({Update.class}) User user) {
+    return "success";
+}
+----
+
+==== **嵌套校验**
+
+前面的示例中，参数类里面的字段都是基本数据类型和String类型。但是实际场景中，有可能某个字段也是一个对象，这种情况下，可以使用嵌套校验。比如，上面保存User信息的时候同时还带有所属组织信息。需要注意的是，此时参数类的对应字段必须标记@Valid注解。 此时需要注意的是，嵌套类型中所使用的分组class与主参数类得分组class不一致时，需要在controller的参数校验注解@Validated上同时指定 User 和 Organization 的分组class。 例如：@Validated({User.Insert.class, Organization.Insert.class})。 当然，同时指定多个分组是可以完成这个目标得，但是对于一个大型系统中，如果每个接口都要独立定义校验类的话，这种校验分组类会很凌乱，因此，使用定义的通用的校验类是有必要得。我们系统中定义了ValidatorGroup类，该类中定义了几个常用的分组，基本可以满足常规的使用。
+
+[source,java]
+----
+@Data
+public class OrganizationRequest {
+    @DecimalMin(value = "1", message = "主键必须是大于0的数值", groups = {ValidatorGroup.Update.class})
+    @NotNull(message = "主键不能为空", groups = {ValidatorGroup.Update.class})
+    private Long pk;
+    @NotBlank(message = "组织名称不能为空", groups = {ValidatorGroup.Insert.class, ValidatorGroup.Update.class})
+    private String orgName;
+    @NotBlank(message = "组织编码不能为空", groups = {ValidatorGroup.Insert.class, ValidatorGroup.Update.class})
+    private String orgCode;
+    @DecimalMin(message = "父组织ID必须是大于0的整数", value = "1", groups = {ValidatorGroup.Insert.class, ValidatorGroup.Update.class})
+    private Long orgPid;
+}
+@Data
+public class UserRequest {
+    @NotNull(groups={ValidatorGroup.Update.class})
+    @Min(value="1", groups={ValidatorGroup.Update.class})
+    private Long id;
+    @NotNull(groups={ValidatorGroup.Insert.class, ValidatorGroup.Update.class})
+    @Length(min=5, max=20, groups={ValidatorGroup.Insert.class, ValidatorGroup.Update.class})
+    private String name;
+    @Range(min=0, max=100, groups={ValidatorGroup.Insert.class, ValidatorGroup.Update.class})
+    private Integer age;
+    @Email(groups={ValidatorGroup.Insert.class, ValidatorGroup.Update.class}
+           private String email;
+    @Valid
+    @NotNull(groups = ValidatorGroup.Insert.class)
+    private OrganizationRequest organization;
+}
+
+@RestController
+@RequestMapping("/user")
+public class UserController {
+@PostMapping("/insert")
+public Long insert(@RequestBody @Validated(ValidatorGroup.Insert.class) UserRequest user) {
+// TODO insert
+retrun ApiResult.ok();
+}
+}
+----
+
+    嵌套[集合]校验失败的情况下，同样抛出MethodArgumentNotValidException异常
+
+==== **嵌套集合校验**
+
+有时，系统也可能接收一个集合参数，如果对该类型的属性进行校验时，会对集合里的每一项都进行校验。使用方式与嵌套校验的使用方式相同。在集合参数上使用@Valid注解。@Valid注解可以和其他校验注解同时使用。
+
+[source,java]
+----
+@Data
+public class Position {
+    @Length(min = 3, max = 5, groups = ValidatorGroup.Insert.class)
+    private String positionName;
+}
+@Data
+public class UserRequest {
+    @NotNull(groups={ValidatorGroup.Update.class})
+    @Min(value="1", groups={ValidatorGroup.Update.class})
+    private Long id;
+    @NotNull(groups={ValidatorGroup.Insert.class, ValidatorGroup.Update.class})
+    @Length(min=5, max=20, groups={ValidatorGroup.Insert.class, ValidatorGroup.Update.class})
+    private String name;
+    @Range(min=0, max=100, groups={ValidatorGroup.Insert.class, ValidatorGroup.Update.class})
+    private Integer age;
+    @Email(groups={ValidatorGroup.Insert.class, ValidatorGroup.Update.class}
+    private String email;
+    @Valid
+    @NotNull(groups = ValidatorGroup.Insert.class)
+    private List<Position> positions;
+}
+@RestController
+@RequestMapping("/user")
+public class UserController {
+    @PostMapping("/insert")
+    public Long insert(@RequestBody @Validated(ValidatorGroup.Insert.class) UserRequest user) {
+        // TODO insert
+        retrun ApiResult.ok();
+    }
+}
+----
+
+==== **自定义校验**
+
+业务需求总是比框架提供的这些简单校验要复杂的多，我们可以自定义校验来满足我们的需求。自定义spring validation非常简单，主要分为两步： ● 第一步：定义约束注解 ● 第二步：实现ConstraintValidator接口编写约束校验器
+
+接下来，我们以实现手机号验证为例，来实现一个自定义校验。 ● 定义约束注解 该注解除了使用基本的元注解以外，还需要使用@Constraint注解标注，并指定validatedBy属性为我们第二步实现的约束校验器的class.
+另外，该注解必须包含以下三个spring-validation中使用的必须属性，String message、 Class<?>[] groups、Class<? extends Payload>[] payload。
+
+[source,java]
+----
+@Documented
+@Retention(RUNTIME)
+@Target({ElementType.METHOD, ElementType.FIELD})
+@Constraint(validatedBy = MobileNumberValidator.class)
+public @interface MobileNumber {
+
+    String message() default "手机号格式错误";
+
+    Class<?>[] groups() default {};
+
+    Class<? extends Payload>[] payload() default {};
+
+     /**
+     * 同一个元素上指定多个该注解时使用, 以下代码在本示例中可能不适用。只是用来能完全说明实现的细节
+     */
+    @Target({ElementType.METHOD, ElementType.FIELD})
+    @Retention(RUNTIME)
+    @Documented
+    public @interface List {
+        MobileNumber[] value();
+    }
+}
+----
+
+● 实现ConstraintValidator接口编写约束校验器 该接口有两个泛型，第一个泛型指定该校验器所校验的注解，第二个泛型指定该校验器所处理的数据的类型。 我们需要实现isValid方法来实现具体的校验逻辑，如果返回true,表示校验通过，fasle则不通过。 如果我们需要使用到校验注解中的相关参数，我们还需要重写接口中的默认方法initialize，然后将该注解保存至类属性中，这样在isValid方法中就可以获取检验注解的相关内容了。
+
+[source,java]
+----
+public class MobileNumberValidator  implements ConstraintValidator<MobileNumber, String>{
+    private static final Pattern PATTERN= Pattern.compile( "^1[3-9]\\d{9}$");
+    private MobileNumber mobileNumber;
+
+    @Override
+    public void initialize(MobileNumber constraintAnnotation) {
+        this.mobileNumber = constraintAnnotation;
+    }
+
+    @Override
+    public boolean isValid(String iphone, ConstraintValidatorContext context) {
+        if (StringUtils.hasText(iphone)) {
+            return PATTERN.matcher(iphone).matches();
+        }
+        // 如果没有传手机号的情况下，默认是符合格式，允许验证通过的
+        return true;
+    }
+}
+----
+
+这样我们就可以使用@MobileNumber注解进行参数校验。
+
+[source,java]
+----
+@Data
+public class UserRequest {
+    @NotNull(groups={ValidatorGroup.Update.class})
+    @Min(value="1", groups={ValidatorGroup.Update.class})
+    private Long id;
+    @NotNull(groups={ValidatorGroup.Insert.class, ValidatorGroup.Update.class})
+    @Length(min=5, max=20, groups={ValidatorGroup.Insert.class, ValidatorGroup.Update.class})
+    private String name;
+    @Range(min=0, max=100, groups={ValidatorGroup.Insert.class, ValidatorGroup.Update.class})
+    private Integer age;
+    @Length(min=11, max=11)
+    @PhoneNumber
+    private String phone;
+    @Email(groups={ValidatorGroup.Insert.class, ValidatorGroup.Update.class}
+    private String email;
+    @Valid
+    @NotNull(groups = ValidatorGroup.Insert.class)
+    private List<Position> positions;
+}
+----
+
+#### **编程式校验**
+
+上面的示例都是基于注解来实现自动校验的，在某些情况下，我们可能希望以编程方式调用验证。这个时候可以注入jakarta.validation.Validator对象，然后再调用其api。
+
+[source,java]
+----
+@RestController
+@RequestMapping("/user")
+public class UserController {
+    @Resource
+    private Validator  validator;
+    @PostMapping("/insert")
+    public Long insert(@RequestBody UserRequest user) {
+        Set<ConstraintViolation<UserRequest>> validate = validator
+        .validate(user, ValidatorGroup.Insert.class);
+        // 如果校验通过，validate为空；否则，validate包含未校验通过项
+        if (!validate.isEmpty()) {
+            // 校验未通过
+            throw new ConstraintViolationException(validate);
+        }
+        // TODO insert
+        retrun ApiResult.ok();
+    }
+}
+----
+
+==== **统一异常处理**
+
+前面说过，如果校验失败，会抛出MethodArgumentNotValidException或者ConstraintViolationException异常。我们当然不可能再去手动捕捉异常进行处理。但我们又不想手动捕捉这个异常，又要对这个异常进行处理，因为给前端抛出异常肯定是不合理的，应该将异常统一处理后返回一个更友好的提示。那正好使用SpringBoot全局异常处理来达到一劳永逸的效果！ 首先，我们需要新建一个类，在这个类上加上@ControllerAdvice或@RestControllerAdvice注解，这个类就配置成全局处理类了。然后在类中新建方法，在方法上加上@ExceptionHandler注解并指定你想处理的异常类型，接着在方法内编写对该异常的操作逻辑，就完成了对该异常的全局处理！我们现在就来演示一下对参数校验失败抛出的MethodArgumentNotValidException全局处理：
+
+[source,java]
+----
+@Slf4j
+@RestControllerAdvice
+public class ExceptionHandlerControllerAdvice {
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    @ResponseStatus(HttpStatus.OK)
+    @ResponseBody
+    public ApiResult<?> handleConstraintViolationException(ConstraintViolationException ex) {
+        List<ValidError> validErrors = new ArrayList<>();
+        Set<ConstraintViolation<?>> violations = ex.getConstraintViolations();
+        for (ConstraintViolation<?> violation : violations) {
+            Object invalidValue = violation.getInvalidValue();
+            String message = violation.getMessage();
+            String path = violation.getPropertyPath().toString();
+            String field = path.substring(path.lastIndexOf(".") + 1);
+            ValidError validError = ValidError.builder().field(field).value(invalidValue).message(message).build();
+            validErrors.add(validError);
+        }
+        log.warn("以下请求参数非法: {}", validErrors);
+        ApiResult<Object> apiResult = ApiResult.builder().code(BizStatus.ERROR).data(validErrors).msg("请求参数校验失败").build();
+        return apiResult;
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    @ResponseStatus(HttpStatus.OK)
+    @ResponseBody
+    public ApiResult<?> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex) {
+        List<ValidError> validErrors = new ArrayList<>();
+        for (FieldError fieldError : ex.getFieldErrors()) {
+            String field = fieldError.getField();
+            Object invalidValue = fieldError.getRejectedValue();
+            String message = fieldError.getDefaultMessage();
+            ValidError validError = ValidError.builder().field(field).value(invalidValue).message(message).build();
+            validErrors.add(validError);
+        }
+        log.warn("以下请求参数非法: {}", validErrors);
+        ApiResult<Object> apiResult = ApiResult.builder().code(BizStatus.ERROR).data(validErrors).msg("请求参数校验失败").build();
+        return apiResult;
+    }
+
+    // 使用form data方式调用接口，校验异常抛出 BindException
+    @ExceptionHandler(BindException.class)
+    @ResponseStatus(HttpStatus.OK)
+    @ResponseBody
+    public ApiResult<String> BindException(BindException e) {
+        List<FieldError> fieldErrors = e.getBindingResult().getFieldErrors();
+        List<String> collect = fieldErrors.stream()
+            .map(DefaultMessageSourceResolvable::getDefaultMessage)
+            .collect(Collectors.toList());
+        return new ApiResult(ResultCode.VALIDATE_FAILED, collect);
+    }
+}
+----
+
+再次进行测试，这次返回的就是制定的错误提示信息！通过全局异常处理优雅的实现了想要的功能！
+
+==== **@Valid和@Validated区别**
+
+| **区别** | **@Valid** | **@Validated** | | --- | --- | --- | | 提供者 | JSR-303规范 | Spring | | 是否支持分组 | 不支持 | 支持 | | 标注位置 | METHOD, FIELD, CONSTRUCTOR, PARAMETER, TYPE_USE | TYPE, METHOD, PARAMETER | | 嵌套校验 | 支持 | 不支持 |
+
+这两个注解属于相辅相成，因此配合使用才能够达到最佳效果。由于有些情况二者是可以通用的，使用起来会比较混乱，因此，达成一个约定，只有在嵌套[集合]校验的时候才使用@Valid，其他情况下我们都使用@Validated。
+
+==== **快速失败**
+
+Spring Validation默认会校验完所有字段，然后才抛出异常。可以通过一些简单的配置，开启 Fast模式，一旦校验失败就立即返回。 通常不会使用快速失败，作为了解即可。
+
+[source,java]
+----
+@Bean
+public Validator validator() {
+    ValidatorFactory validatorFactory = Validation.byProvider(HibernateValidator.class)
+    .configure()
+    // 快速失败模式
+    .failFast(true)
+    .buildValidatorFactory();
+    return validatorFactory.getValidator();
+}
+----
+
+==== 枚举类型校验
+
+枚举验证支持两种方式，一种直接定义枚举类型参数。一种是定义编码类型，然后使用注解标注映射枚举 通常在设计中我们通常会对某一类有限数量值的属性进行编码映射，而不是直接存储中文内容，为了避免占用过多的空间。比如说性别，国家，地区等这样可以罗列的属性。但是在用户传递数据的时候可能会任意的填写，而对于前后端通通校验的情况下也是相当的麻烦。因此，我们需要有一个通用的解决方案来进行映射，避免因为一些错误的值，导致系统出现异常的情况。 在定义数据模型的时候，对于这类数据我们需要定义枚举类型，并实现BaseEnum接口作为转换标识。这类枚举我们暂时只定义了code、name、description三个属性作为通用性的抽象提取。对于业务需要可以自行的进行扩展。
+
+[source,java]
+----
+public interface BaseEnum<T> {
+    /**
+     * 映射的编码 暂时支持 Integer 和 String 两种类型
+     * @return 编码
+     */
+    T getCode();
+
+    /**
+     * 编码所对应的可理解的名称
+     * @return 名称
+     */
+    String getName();
+
+    /**
+     * 对于该项枚举具体的描述说明信息，说明其实际意义以及使用场景
+     * @return 描述信息
+     */
+    String getDescription();
+}
+----
+
+[source,java]
+----
+public enum Sex implements BaseEnum<String> {
+
+    /**
+     * 男性
+     */
+    MAN("1", "男", "男性性别"),
+    /**
+     * 女性
+     */
+    WOMAN("2", "女", "女性性别");
+
+    private final String code;
+    private final String name;
+    private final String description;
+
+    Sex(String code, String name, String description) {
+        this.code = code;
+        this.name = name;
+        this.description = description;
+    }
+
+    @Override
+    public String getCode() {
+        return code;
+    }
+
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    @Override
+    public String getDescription() {
+        return description;
+    }
+}
+----
+
+因此，在定义Controller接口参数的时候，对于这类枚举类型我们需要使用这种对应的枚举类型，这样在传递过来的参数进行映射时，如果不符合规范的情况下，通常会验证失败，不会产生因数据传输过来不合法导致系统问题。同时也不需要人为去写各种各样混杂在业务逻辑中的校验代码。开发人员就只需要关注业务逻辑即可。
+
+##### 方案2
+
+字段使用code进行接收 自定义Enumerable注解，指定枚举类型，执行属性字段，默认code Enumerable(Sex.class)
+
+#### 文件校验
+

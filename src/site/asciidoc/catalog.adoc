@@ -34,6 +34,20 @@ include::shimmer/introduction.adoc[]
 == 模块说明
 include::shimmer/modules.adoc[]
 
+[#api-specification]
+== API规范
+
+include::shimmer/api-specification.adoc[]
+
+[#validation]
+== 参数校验
+
+include::shimmer/validation.adoc[]
+
+[#response-wrapper]
+== 响应包装
+
+include::shimmer/response-wrapper.adoc[]
 
 [appendix]
 [#appendix-1]
