@@ -16,6 +16,9 @@
                 <item name="Javadoc编写规范" href="java/use-javadoc.html"/>
                 <item name="Jackson使用教程" href="java/use-jackson.html"/>
             </item>
+            <item name="H5前端文档" href="h5/introduction.html" collapse="true">
+                <item name="Vue组件间通信/传值" href="h5/vue3-communication.html"/>
+            </item>
         </menu>
     </body>
 
