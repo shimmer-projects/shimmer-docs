@@ -1,0 +1,710 @@
+=== 概述
+
+就本质而言 “泛型”的意思就是参数化类型。参数化类型很重要，因为使用该特性创建的类、接口以及方法可以以参数的形式指定操作的数据类型。
+
+泛型通俗的说就是方法的返回值或参数是不确定的，可以随创建该类对象时改变而改变。
+
+泛型提供了以前缺失的类安全性，并且还可以简化处理过程（例如避免进行强制类型转换等），提高了代码的可重用性。
+
+=== 一段简单的代码理解泛型
+
+对于下面这段代码我们定义了一个泛型类，类中有一个私有的泛型成员变量和几个泛型方法。从中我们可以看出，成员变量或者方法的参数或者返回值可能不是肯定的而是T，并且T是可变的，我们称这个T为泛型。
+
+main方法中分别使用这个泛型类操作了String 和 Integer 。如果没有泛型的支持，我们就只能写两个逻辑相同而参数不同的类或者进行强制转换，大大降低了代码重用和安全性。
+
+[source, java]
+----
+class MyGeneric<T>{ //声明一个泛型类
+    private T obj;//可以使用泛型指定变量
+    public MyGeneric() {}; //无参构造
+    public MyGeneric(T val) { //泛型构造
+        this.obj = val;
+    }
+    public T getObj() { //返回值
+        return this.obj;
+    }
+    public String getName() { //得到确切类型
+        return this.obj.getClass().getName();
+    }
+
+}
+
+public class TestGeneric {
+    public static void main(String[] args) {
+        MyGeneric<String> str = new MyGeneric<String>("xiaobai"); //操作String
+        System.out.println(str.getObj());
+        System.out.println(str.getName());
+
+        MyGeneric<Integer> integer = new MyGeneric<Integer>(5); //操作Integer
+        System.out.println(integer.getObj());
+        System.out.println(integer.getName());
+    }
+}
+----
+
+=== 几点注意
+
+. 泛型只是一个占位符，并没有实际意义，对于上面的例子，实际上操作的还是相应的数据类型（String和Integer）
+. 泛型只能使用引用类型，不支持基本数据类型（至于上面第22行可以直接写5是因为自动装箱）
+. 泛型引用之间是不兼容的，比如上面例子中的代码 str和integer两个实例对象是不兼容的（这是废话，泛型的目的就是提高通用性并限制操作类型）
+
+=== 多个泛型
+
+java中允许一个类有多个泛型，泛型之间使用逗号隔开即可（参看Map<K,V>）。并且泛型只是一个占位符，可以用任何字符表示
+
+[source, java]
+----
+class ManyGeneric<T,V,W>{
+    private T obj1;
+    private V obj2;
+    private W obj3;
+    public T getObj1() {
+        return obj1;
+    }
+    public void setObj1(T obj1) {
+        this.obj1 = obj1;
+    }
+    public V getObj2() {
+        return obj2;
+    }
+    public void setObj2(V obj2) {
+        this.obj2 = obj2;
+    }
+    public W getObj3() {
+        return obj3;
+    }
+    public void setObj3(W obj3) {
+        this.obj3 = obj3;
+    }
+}
+----
+
+=== 泛型方法
+
+如果我们只想在一个方法中使用泛型，换句话说：如果类或者接口没有定义泛型，但是其中的某个或几个方法需要使用泛型（比如静态方法接受一个泛型参数等）该怎么解决？ 答案就是泛型方法。
+
+定义泛型方法的语法是： 访问修饰符 <泛型参数列表> 方法返回值 方法名称（形参列表） {　　方法体　　}
+
+eg： public static <T> mygeneric(T t) {xxx}
+
+泛型方法的定义和普通方法定义不同的地方在于需要在修饰符和返回类型之间加一个泛型类型参数的声明，表明在这个方法作用域中谁才是泛型类型参数；
+
+泛型方法与泛型类的区别：
+
+[source, java]
+----
+class A<T>{
+  //泛型的作用域是整个类
+}
+class A{
+  public static <T> print(T t){   //该泛型只作用于该方法上
+    System.out.println(t);
+  }
+}
+----
+
+=== 泛型有界类型及泛型通配
+
+==== 泛型通配
+
+不显式第指定泛型类型，而是使用 ? 来表示泛型。当我们无法立即确定该类引用使用哪一个泛型（或至少可以确定他与某一个类的关系时）就使用这种形式。该通配一共有三种形式
+
+-  <?> 形式： 不知道泛型到底是何形式·：使用这种方式时  就相当一  <? extends  Object  >  引用的实际对象只要是Object的子类就可以
+
+[source,java]
+----
+public class Test {
+  public static void main(String[] args){
+    ArrayList<?> list = new ArrayList<String> (); //正确
+    ArrayList<?> list = new ArrayList<Integer> (); //正确
+  }
+}
+----
+
+- <? extends xxx> 不知道具体是哪一种形式，但一定是xxx的子类  ：引用的实际对象只能是 xxx类或xxx类的子类
+
+----
+ArrayList<? extends Number> list = new ArrayList<String> (); //错误 不是Number子类
+ArrayList<? extends Number> list = new ArrayList<Integer> (); //正确
+----
+
+- <? super xxx> 不确定哪一种形式，但一定是xxx的父类：引用的实际对象只能是  xxx 或 xxx的父类
+----
+ArrayList<? super Integer> list = new ArrayList<Number> (); //正确
+ArrayList<? super Integer> list = new ArrayList<Object> (); //正确
+ArrayList<? super Integer> list = new ArrayList<String> (); //错误 不是Integer的父类
+----
+
+==== 有界类型
+可以使用任意参数来替换泛型类型是很好的，但是有一些时候我们可能希望对泛型类型进行一些限制。例如我们想在泛型中取得每一个值得double值，这个只有在类继承Number类才可以实现，否则就会编译错误。
+
+那么这个时候我们就可以使用有界类型进行限定，要求泛型类型必须是Number类或其子类。
+
+语法： T extends superClass  意思是说只允许superClass或者其子类的泛型。
+
+见如下例子：
+
+错误的代码：
+
+[source, java]
+----
+ class MyMathClass<T>{
+    T[] nums;
+    public MyMathClass(T[] o) {
+        this.nums = o;
+    }
+    public double avg() {
+        double sum = 0.0;
+        for(int i=0;i<nums.length;i++) {
+            sum += nums[i].doubleValue();  //报错误
+        }
+        return sum/nums.length;
+    }
+}
+
+public class TestGeneric {
+    public static void main(String[] args) {
+        Integer[] nums = new Integer[10];
+        for(int i=0;i<10;i++) {
+            nums[i] = (int)(Math.random()*100);
+        }
+        MyMathClass<Integer> test = new MyMathClass<Integer>(nums);
+        test.avg();
+    }
+}
+----
+
+这里的代码第9行报错，因为不是所有的类型都有doubleValue方法。但是只要是继承了Number类就会有这个方法，所以我们使用有界类型进行限定
+
+　　　　限定方式  T extends Number
+
+[source, java]
+----
+class MyMathClass<T extends Number>{
+    T[] nums;
+    public MyMathClass(T[] o) {
+        this.nums = o;
+    }
+    public double avg() {
+        double sum = 0.0;
+        for(int i=0;i<nums.length;i++) {
+            sum += nums[i].doubleValue();  //报错误
+        }
+        return sum/nums.length;
+    }
+}
+
+public class TestGeneric {
+    public static void main(String[] args) {
+        Integer[] nums = new Integer[10];
+        for(int i=0;i<10;i++) {
+            nums[i] = (int)(Math.random()*100);
+        }
+        MyMathClass<Integer> test = new MyMathClass<Integer>(nums);
+        System.out.println(test.avg());
+    }
+}
+----
+
+同理还可以使用多边界限定，当有多个边界的时候 使用&进行连接 ：class MyMathClass<T extends Number & Serializable> 意思就是说只允许Number或其子类类型并且必须实现Serializable接口。
+
+注意有界类型与泛型通配的区别 （有界类型是声明泛型类指定泛型范围，而泛型通配是泛型引用指向泛型对象时的限制）
+
+=== 泛型擦除
+
+由于要与以前的代码相兼容，java中的泛型是伪泛型，在编译器编译过程中将会擦除泛型的所有信息，使用确切的引用类型将其代替。这就意味着如果没有显示的确定类型，就将使用Object代替，然后进行强制转换来保证类型的匹配
+
+这里就会发生一个模糊性问题，当有两个重载方法时，并且该方法唯一区别就是参数类型不同，则可能造成错误：
+
+[source, java]
+----
+class MyGenClass<T, V> {
+  private T t;
+  private V v;
+
+  public void set(T t) {
+    this.t = t;
+  }
+
+  public void set(V v) {
+    this.v = v;
+  }
+}
+----
+
+=== 使用泛型的一些限制
+8.1 不能实例化泛型参数
+　 T  obj = new T(); 是不合法的，因为编译器不知道要创建哪一种类型的对象，T只是一个占位符。
+
+8.2 静态成员限制
+　　静态成员不能使用泛型声明参数，同时，静态方法也不能操作泛型参数，因为静态属性需要随类加载，无法判断当前泛型的类型。
+
+8.3 数组的限制
+　1.不能实例化泛型数组  原因参考7.1
+
+  2.不能声明指向特定泛型类型的数组
+在main()方法中不能s声明指向t特定范型的引用的数组。也就是说，下面这行a代码不能编译
+Gen<Integer>[] gens = new Gen<>()[10]; //wrong
+不过如果使用通配符的话，可以创建指向范型的引用的数组，如下所示：
+Gen<?>[] gens = new Gen<>()[10]; // ok
+相对于使用原始类型数组，这种方式更好些，因为至少仍然会强制进行某些类型检查
+
+
+=== 泛型对异常的限制
+泛型类不能继承Throwable类，这就意味着不能创建泛型异常类（也就是说泛型不支持异常，但是泛型类中依旧支持其他类型的异常）
+
+当然，泛型支持异常也没有什么意义。
+
+
+
+### 泛型
+
+#### 体验泛型
+
+* JDK1.5以前的集合类中存在的问题
+
+```java
+    List list = new ArrayList();
+    list.add(1);
+    list.add(1L);
+    list.add("abc");
+    Integer o = (Integer)list.get(1);
+```
+
+  java.lang.ClassCastException: java.lang.Long cannot be cast to java.lang.Integer 编译器要强制类型转换且运行时出错
+
+* JDK1.5的集合类希望你在定义集合时，明确表示你要向集合中装哪种类型的数据，无法加入指定类型以外的数据
+
+  ```java
+  List<Integer> list = new ArrayList<>();
+          list.add(1);
+          /*list.add(1L);
+          list.add("abc");*/ // 这两行编译时就报了错误
+          Integer o = list.get(1); //返回类型也不在需要强制转换
+  ```
+
+* 泛型是提供给javac编译器使用的，可以限定集合中的输入类型，让编译器挡住源程序中的非法输入，编译器编译带类型说明的集合时会去掉“类型”信息，使程序运行效率不受影响，对于参数化的泛型类型，getClass()方法的返回值和原始类型完全一样。由于便已生成的字节码会去掉泛型的类型信息，只要能跳过编译器，就可以往某个泛型集合中加入其他类型的数据，例如，反射得到集合，在调用其add方法即可。
+
+* 使用泛型集合中的元素限定为一个特定类型，集合中只能存储同一个类型的对象，这样更安全，并且当从集合获取一个对象时，编译器也可以知道这个对象的类型，不需要对对象进行强制类型转换，这样更方便。
+
+* JDK1.5以后，以原来的方式将各种不同类型的数据装到一个集合中，但编译器汇报稿unchecked警告。
+
+#### 了解泛型
+
+* ArrayList<E>类型定义和ArrayList<Integer>类殷勇忠涉及如下术语
+
+* 整个称为ArrayList<E>泛型类型
+* ArrayList<E>中的E称为类型变量或类型参数
+* 整个ArrayList<Integer>称为参数化的类型
+* ArrayList<Integer>中的Integer称为类型参数的实例或实际类型参数
+* ArrayList<Integer>中的<>称为typeof
+* ArrayList称为原始类型
+
+* 参数化类型与原始类型的兼容性
+
+* 参数化类型可以引用一个原始类型的对象，编译报告警告，例如
+
+    Collection<String> vector = new Vector();
+
+* 原始类型可以引用一个参数化类型的对象，编译报告警告，例如
+
+    Collection vec = new Vector<String>();
+
+* 参数化类型不考虑类型参数的继承关系
+
+  泛型中的类型参数严格说明集合中装载的数据类型是什么和可以加入什么类型的数据。
+
+  记住Collection<String>和Collection<Object>是两个没有转换关系的参数化类型
+
+  Vector<String> vector = new Vector<Object>();  //错误  不写Object没有错，写了就是明知故犯
+
+  如果可以的话，以后从vector中取出的对象当做String用，而实际指向的对象中可以加入任意类型的对象
+
+  Vector<Object> vec = new Vector<String>();   // 错误
+
+  可以的话，那么以后可以想vec中加入任意类型的对象，而vec实际指向的集合中只能装String对象。
+
+* 在创建数组实例时，数组的元素不能使用参数化的类型，例如，下面语句有错误。
+
+  Vector<Integer> vectorList = new Vector<Integer>[10]
+
+思考：下面的代码会报错吗
+
+Vector v = new Vector<String>();
+
+Vector<Object> v1 = v;
+
+编译器只考虑编译时的语法，不考虑运行时的具体情况，此时String与Object没有关系，编译器已经将Vector<String>转成了原始类型。所以不会报错
+
+#### 泛型中的？通配符
+
+* 问题
+
+  定义一个方法，该方法用于打印出任意参数化类型的集合中的所有数据，该方法如何定义？
+
+* 错误方式
+
+  ```java
+   public static void printCollection(Collection<Object> cols){
+          for (Object obj: cols) {
+              System.out.println(obj);
+          }
+      }
+  ```
+
+* 正确方式
+
+  ```java
+    /**
+       * 使用Object类型是不可以的，因为泛型没有继承关系
+       * 使用？通配符是不能够使用与参数类型有关的方法的
+       * @param cols
+       */
+      public static void printCollection(Collection<?> cols){
+  //        cols.add("sadf") //会报错
+          for (Object obj: cols) {
+              System.out.println(obj);
+          }
+      }
+  ```
+
+  使用？通配符可以引用其他各种参数化的类型，？通配符定义的变量主要用作引用，可以调用与参数化无关的方法，不能调用与参数化有关的方法。
+
+#### 泛型中的？通配符的扩展
+
+* 限定通配符的上边界
+* 正确Vector<? extends Number> x = new Vector<Integer>()；
+* 错误Vector<? extends Number> x = new Vector<String>();
+* 限定通配符的下边界
+* 正确Vector<? super Integer> x = new Vector<Number>();
+* 错误Vector<? super Integer> x = new Vector<Byte>();
+* 提示
+* 限定通配符总是包括自己
+
+#### 泛型集合类的综合案例
+
+迭代出Map中的数据
+
+```java
+ HashMap<String, Integer> map = new HashMap<>(16);
+        Set<Map.Entry<String, Integer>> entries = map.entrySet();
+        for (Map.Entry<String,Integer> entry:entries){
+            System.out.println(entry.getKey() + ":" + entry.getValue());
+        }
+```
+
+#### 定义泛型的方法
+
+Java中的泛型类型类似于C++中的模板，但是这种相似性仅限于表面，Java语言中的泛型基本上完全是在编译器中实现，用于编译器执行类型检查和类型推断，然后生成普通的非泛型的字节码，这种实现技术称为擦除（erasure 编译器使用泛型类型信息保证类型安全，然后在生成字节码之前将其清除）。这是因为扩展虚拟机指令集来支持泛型被认为是无法接受的，这会为Java厂商升级其JVM造成难以逾越障碍。所以，java的泛型采用了可以完全在编译器中实现的擦除方法。
+
+```java
+ public static void main( String[] args ) throws Exception {
+
+        String[] strings = {"q", "c", "r"};
+        swap(strings, 1,2);
+        System.out.println(Arrays.asList(strings));
+
+//        swap(new int[]{1,2,3},1,2);   //这种方式会报错的，因为泛型的类型只能是引用类型，不能是基本类型
+    }
+
+    private static <T> void swap(T[] a,int i, int j){
+        T tmp = a[i];
+        a[i] = a[j];
+        a[j] = tmp;
+    }
+```
+
+用于放置泛型的类型参数的尖括号应出现在方法的其他所有修饰符之后何在方法的返回类型之前，也就是紧邻返回值之前。按照惯例，类型参数通常用单个大写字母表示。
+
+只有应用类型才能作为泛型方法的实际参数，使用基本数据类型就会编译报错。
+
+除了在应用类型时可以使用extends限定符，在定义泛型是也可以使用extends限定符，还可以使用&来指定多个边界<V extends Serialize & cloneable>
+
+普通方法、构造方法和静态方法中都可以使用泛型
+
+也可以用类型变量表示异常，称为参数化的异常，可以用于方法的throws列表中，但是不能用于catch子句中
+
+在反省中可以同时有多个类型参数，在定义他们的尖括号中有逗号分。<K,V>
+
+ 数组本来就是对象了，无法自动装箱基本数据类型
+
+#### 泛型方法的练习题
+
+* 编写一个泛型方法，自动将Object类型的对象装换成其他类型
+* 定义一个方法，可以将任意类型的数组中的所有元素填充为相应类型的某个对象
+* 采用自定泛型方法的方式打印出任一参数化类型的集合中的所有内容。
+* 在这种情况下，前面的通配符方案要比泛型方法更有效，当一个类型变量用来表达两个参数之间或者参数和返回值之间的关系时，即同一个类型变量在方法签名的两处被使用，或者类型变量在方法体代码中也被使用而不是尽在签名的时候，才需要使用泛型方法。
+* 定义一个方方法，把任意参数类型的集合中的数据安全第一复制到相应类型的数组中
+* 定义一个方法，把任意参数类型的一个数组中的数据安全低复制到相应类型的另一个数组中。
+* 泛型具有传播性，你定义的泛型方法中使用了其他的泛型方法，将会将你的泛型作为方法的泛型
+* 泛型之间会自动运算其最小父类关系作为其返回值
+
+#### 类型参数的类型推断
+
+* 编译器判断泛型方法的实际类型参数的过程称为类型推断，类型推断是相对于知觉推断的，其实现方法是一种非常复杂的过程。
+
+* 根据调用泛型方法是实际传递的参数类型或返回值的类型来推断，具体规则如下：
+
+* 当某个类型变量只在整个参数列表中的所有参数和返回值中的一池被应用了，那么根据调用方法时该出的实际应用类型来确定，这很容易凭着感觉推断出来，即直接根据调用方法时传递的参数类型或返回值来决定泛型参数的类型。例如
+
+    swap(new String[3],1,2) --> static <E> void swap(E[] a, int i, int j)
+
+* 当某个类型变量在整个参数列表中的所有参数和返回之中的多处被应用了，如果调用方法时这多出的实际类型都对应了不同类型来确定，这很容易凭着感觉推断出来，例如
+
+    add(3,5)   --> static <T> add(T a, T b)
+
+* 当某个类型变量在整个参数列表中的所有参数和返回值中的多处被应用了，如果调用方法时这多处的实际应用类型对应到了不同的类型，且没有使用返回值，这时候取多个参数中的最大交集类型，例如，下面语句是及对应的类型就是Number了，表姨没问题，只是运行时出问题：
+
+    fill(new Integer[3], 3, 5)  --> static <T> void fill(T[] a, T v)
+
+* 当某个类型变量在整个参数列表中的所有参数和返回值中的多处被应用了，如果调用方法时这多处的实际应用类型对应到了不同的类型，并且使用返回值，这是后优先考虑返回值的类型，例如，下面语句实际对应的类型就是Integer了，编译将报告错误，将变量的类型改为float，接着在改成Number，就不报错了。
+
+    int x=(3,3,5)  ---> static <T>  T add(T a, T b)
+
+#### 定义泛型类型
+
+* 如果累的示例对象中的多车都要用到同一份泛型参数，即这些地方引用的泛型类型要保持同一个实际类型时，这时候就要采用泛型类型的方式进行定义，也就是累级别的泛型，语法格式如下
+
+* 类级别的泛型是分局引用范磊名师指定的类型信息来参数化类型变量的，例如，如下两种方式都可以
+
+  ```java
+  public class Generic<T>{
+      private T field;
+      public void save(T obj){}
+      public T getById(String id){
+          return null;
+      }
+  }
+  ```
+
+* 注意
+
+* 在对泛型类型进行参数化是，类型参数的实例不许是应用类型，不能是基本类型
+* Genetic<String> generic = null;
+* new Generic<String>();
+* 当一个变量被声明为泛型时，只能被实例变量和方法调用（还有内嵌类型），而不能被静态变量。
+
+
+
+
+- 泛型的声明
+
+  interface List<T> 和class TestClass<K,V>,其中TKV不代表值，而是代表类型，这里使用任意字母都可以。常用T表示，是Type的缩写。
+
+- 泛型的实例化
+
+  一定要在类名后面指定类型的值（类型）如：
+
+  List<String sl = new ArrayList<>();
+
+  Iterator<Customer> iterator = customers.iterator();
+
+- T只能是类，不能使用基本数据类型填充。
+
+1. 泛型在集合中的使用
+2. 自定义泛型类、泛型接口、泛型方法
+3. 泛型与集成的关系
+4. 通配符
+
+
+
+1. 在集合中没有使用泛型的情况下，任何Object及其子类的对象都可以添加进来。强转类型是可能报ClassCastException的异常。（类型不安全）
+2. 在集合中使用了泛型
+
+```java
+public class Starter {
+    public static void main(String[] args) {
+        List<Integer> list = new ArrayList<>();
+        list.add(78);
+        list.add(79);
+        list.add(28);
+//        list.add("28");
+        for (Integer a:list){
+            System.out.println(a);
+        }
+
+        Iterator<Integer> iterator = list.iterator();
+        while (iterator.hasNext()){
+            System.out.println(iterator.next());
+        }
+    }
+}
+```
+
+```JAVA
+public class Starter {
+    public static void main(String[] args) {
+        Map<String,Integer> map = new HashMap<>(16);
+        map.put("AA", 3);
+        map.put("BB", 5);
+        map.put("CC", 4);
+        Set<Map.Entry<String, Integer>> entries = map.entrySet();
+        for (Map.Entry<String, Integer> m:entries){
+            System.out.println(m.getKey() + ":" + m.getValue());
+        }
+    }
+}
+```
+
+3. 自定义泛型类
+
+```java
+public class Starter {
+    public static void main(String[] args) {
+        CustomerDao customerDao = new CustomerDao();
+        customerDao.add(new Customer());
+    }
+}
+
+/**
+ * DAO database access object 数据库访问对象
+ * @param <T> 泛型， 必须是引用数据类型，基本数据类型是不可以的。
+ */
+class DAO<T> {
+    public void add(T t){
+        //TODO
+    }
+
+    public T get(int index){
+        return null;
+    }
+
+    public List<T> getForList(){
+        return null;
+    }
+
+    public void delete(int index){
+        //TODO
+    }
+}
+
+class Customer {}
+
+/**
+ * 使用泛型类，要么直接创建DAO对象，要么创建其子类，在继承中指定T是什么
+ */
+class CustomerDao extends DAO<Customer> {
+
+}
+```
+
+【注意点】
+
+1. 不可以在static方法中使用泛型的声明
+2. 对象实例化时不指定泛型，默认为Object
+3. 泛型不同的引用不能互相赋值
+4. 加入集合中的对象类型不许与指定的泛型类型一致。
+5. 如果泛型类是一个接口或抽象类，则不可创建泛型类型的对象
+6. 不能再catch中使用泛型
+7. 从泛型类派生子类，泛型类型需具体化
+
+*把集合中的内容限制为一个特定的数据类型，这就是generics背后的核心思想*
+
+3. 自定义泛型接口
+4. 自定义泛型方法
+
+```java
+public class Starter {
+
+    // 声明泛型方法
+    public <E> E getE(E e){
+        return e;
+    }
+
+    // 实现数组到集合的复制
+    public <E> List<E> fromArrayToList(E[] e, List<E> list){
+//        for (E e1: e){
+//            list.add(e1);
+//        }
+        list.addAll(Arrays.asList(e));
+        return list;
+    }
+
+    public static void main(String[] args) {
+        Starter starter = new Starter();
+        Integer[] a = {1,2,3};
+        List<Integer> integers = starter.fromArrayToList(a, new ArrayList<Integer>());
+        System.out.println(integers);
+    }
+}
+```
+
+```java
+class Order<T> {
+
+    /**
+     * 1
+     * @param t t
+     * @return t
+     */
+    public static T getT(T t){
+        return t;
+    }
+
+    /**
+     * 2
+     * @param e e
+     * @param <T> t
+     * @return t
+     */
+    public static <T> T getA(T e){
+        return e;
+    }
+
+    /**
+     * 以上两种方法的区别：
+     * 1. getT的使用方式是错误的，因为对于类的泛型是在实例化时才能确定的，而静态方法是不与具体实例相关的。
+     * 2. getA的使用方式是正确的，因为这是一个泛型方法，泛型是在具体调用的时候确定的。与具体的类泛型是无关的。这两个方法的T并不是同一个T
+     */
+
+}
+```
+
+
+
+3. 泛型与集合的关系
+
+   A类是B类的子类，G是带泛型声明的类或接口。那么G<A> 不是G<B>的子类
+
+4. 通配符?
+
+   A类是B类的子类，G是带泛型声明的类或接口。则G<?>是G<A>、G<B>的父类
+
+- 以List<?>为例，能读取其中的数据，因为不管存储的是什么类型的元素，其一定是Object类的或其子类的
+- 以List<?>为例，不可以向其中写入数据。因为没有指明可以存放到其中的类型。唯一例外的是null
+
+5. 有条件限制的通配符
+
+   <?>
+
+   <? extends A>  A的子类(包含A)
+
+   <? super A>      A的父类(包含A)
+
+使用反射获得泛型的实际类型参数
+
+```java
+public class Starter {
+    public static void main(String[] args) throws NoSuchMethodException {
+        generate();
+    }
+
+    private static void generate() throws NoSuchMethodException {
+        Method applyMethod = Starter.class.getMethod("applyVector", Vector.class);
+        Type[] parameterTypes = applyMethod.getGenericParameterTypes();
+        ParameterizedType pType = (ParameterizedType)parameterTypes[0];
+        Type rawType = pType.getRawType();
+        System.out.println(rawType);
+        System.out.println(pType.getActualTypeArguments()[0]);
+    }
+
+    /**
+     * 使用反射获得泛型的实际类型参数
+     */
+    public static void applyVector(Vector<Date> v1){
+
+    }
+}
+
+```
+

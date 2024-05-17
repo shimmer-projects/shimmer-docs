@@ -1,0 +1,126 @@
+=== 为什么要有枚举
+
+问题：要定义星期几或者性别的变量，该怎么定义？假设用1-7分别表示星期一到星期日，但有人可能会写成 int weekday = 0;(枚举类表示某一类对象是有限个的)
+
+JDK1.5之前需要我们使用类似于单例模式的方式去自定义枚举类
+
+JDK1.5新增enum关键字用于定义枚举类
+
+若枚举类中只有一个成员，则可以作为一种单例模式的实现方式
+
+枚举就是要让某个类型的变量的取值只能为若干个固定值中的一个，否则编译器就会报错。枚举可以让编译器在编译时就可以控制源程序中填写的非法值，普通变量的方式在开发阶段无法实现这一目标。
+
+=== 用普通类实现枚举功能，定义一个Weekday的类来模拟枚举功能
+- 私有的构造方法
+- 每个元素分别用一个公有的静态成员变量表示
+- 可以有作干共有方法或抽象方法，例如，要提供nextDay方法必须是抽象的。
+- 采用抽象方法定义nextDay就将大量的if else语句转译成了一个个独立的类
+
+[source,java]
+----
+public abstract class WeekdayClass {
+    private WeekdayClass(){}
+
+    public static final WeekdayClass SUNDAY = new WeekdayClass(){
+
+        @Override
+        public WeekdayClass nextDay() {
+            return MONDAY;
+        }
+    };
+    public static final WeekdayClass MONDAY = new WeekdayClass(){
+        @Override
+        public WeekdayClass nextDay() {
+            return SUNDAY;
+        }
+    };
+
+    public abstract WeekdayClass nextDay();
+
+    @Override
+    public String toString() {
+        return this == SUNDAY?"SUN":"MON";
+    }
+}
+----
+
+=== 枚举的基本应用
+- 举例：定义一个Weekday的枚举
+- 扩展：枚举类的values,valueOf,name,toString,ordinal等方法
+- 总结：枚举是一种特殊的类，其中的每个元素都是该类的一个实例对象，例如可以调用Weekday.SUN.getClass().getName和Weekday.class.getName
+
+=== 枚举类定义的注意事项
+- 枚举就相当于一个类，其中也可以定义构造方法、成员变量、普通方法和抽象方法
+- 枚举元素必须位于枚举体中的最开始的部分，枚举元素列表的后面要有分号与其他成员分隔，把枚举中的成员方法或变量等方法或变量等放在枚举元素的前面，编译器报错
+- 带构造方法的枚举
+* 构造方法必须定义成私有的
+* 如果有多个构造方法，该如何选择哪个构造方法
+* 枚举元素MON和MON()的效果一样，都是调用默认的构造方法
+- 带方法的枚举
+* 定义枚举类TrafficLamp
+* 实现普通的next方法
+* 实现抽象的next方法，每个元素分别是由枚举类的子类来生成的实力对象，这些子类采用乐死内部类的方式进行定义
+* 增加上表示时间的构造方法
+- 枚举只有一个成员时，就可以作为一种单例的实现方式
+
+[source,java]
+----
+enum Weekday {
+    SUN,MON,TUE,WED,THI,FRI,SAT;
+}
+
+enum Weekday1 {
+    SUN(1),MON(),TUE,WED,THI,FRI,SAT;
+
+    Weekday1(){
+        System.out.println("first");
+    }
+    Weekday1(int day){
+        System.out.println("second");
+    }
+}
+
+enum TrafficLamp{
+    RED(1){
+        @Override
+        TrafficLamp nextLamp() {
+            return GREEN;
+        }
+    },
+    GREEN(2){
+        @Override
+        TrafficLamp nextLamp() {
+            return YELLOW;
+        }
+    },
+    YELLOW(3){
+        @Override
+        TrafficLamp nextLamp() {
+            return RED;
+        }
+    };
+    abstract TrafficLamp nextLamp();
+
+    private int time;
+    TrafficLamp(int time){
+        this.time = time;
+    }
+}
+----
+
+
+### 枚举类
+
+- 枚举类
+
+    类的对象是有限个的，同时是确定的。
+
+- 如何自定义枚举类
+- 私有化类的构造器，保证其不能在外部创建
+- 再类的内部创建枚举类的实例。声明为：public static final 类型的
+- 若类有属性，那么属性声明为 private final 。此属性在构造器中指明。
+- 使用enum关键字定义枚举类
+- 其中常用的方法values() valueof(String name)
+- 枚举类如何实现接口：
+. 让类实现此接口，类的对象共享同一套接口的抽象方法的实现。
+. 让类的每一个对象都去实现接口的抽象方法，进而通过类的对象调用被重写的抽象方法时，执行的效果不同。

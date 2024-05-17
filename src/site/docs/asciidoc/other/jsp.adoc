@@ -1,0 +1,307 @@
+=== java EE核心十三种技术规范介绍
+java EE是一个开放的平台，它包括的技术很多，主要包括十三种核心的技术。我给大家介绍一下，建立一个整体的概念。另外，我们特别要强调的的是：在完成一个项目中，并不是这十三种技术都要用到，实际上是有选择的使用。换句话说，一个程序员不是非得把这十三种技术全部掌握了才能从事java EE 开发。实际上，程序员要把所有的java EE技术都掌握，都精通也是不现实的，我认为能够成为java EE程序员，他必须掌握的技术是java，servlet,JSP,如果这三门技术没有学好，而去一味的追求structs,hibernate,ejb,spring,webwork, jsf等web框架，我看也是水中芦苇，山中竹笋，华而不实。
+
+在这里我谈谈我在学习j2ee流程，并谈到在此过程中领会的经验和教训。以便后者少走弯路。
+
+除了是三种技术规范外，java EE还提供了很多的web框架，目前最流行的是spring，mybatis等框架。
+
+
+
+==== Java数据库连接(JDBC)
+
+JDBC API以一个统一的方式访问各种数据库。与ODBC类似，JDBC将开发者和私有数据库之间的问题隔离开来。由于建立在Java上，因此JDBC可以提供平台无关的数据库访问。
+
+JDBC定义了4种不同的驱动,具体来说,包括有:
+
+- 类型1：JDBC-ODBC桥
+
+在JDBC刚产生时，JDBC-ODBC桥是非常有用的。通过它，开发者可以使用JDBC来访问一个ODBC数据库。缺点是：他需要在客户机器上安装一个ODBC驱动，该机器通常是应该运行微软Windows系统的。使用这一类的驱动器，你会失去JDBC平台无关性的好处。此外，ODBC驱动器需要客户端的管理。
+
+- 类型2：JDBC-native驱动桥
+
+JDBC-native驱动桥提供了一个建筑在本地数据库上的JDBC接口--没有使用ODBC。JDBC驱动将标准的JDBC调用转变为对数据库API的本地调用。使用类型2的驱动也会失去JDBC平台无关性的好处，并且需要安装客户端的本地代码。
+
+- 类型3：JDBC-network桥
+
+JDBC-network桥不需要客户端的数据库驱动，他们使用网络-服务器中层来访问一个数据库。这会引出诸如负载均衡、连接池等技术，数据缓冲也是可能的。由于类型3的驱动通常可带来相对小的下载时间，它是平台无关的，并且不需要客户端的安装和管理，因此和适合用作Internet的应用。
+
+- 类型4：纯Java驱动
+
+类型4使用纯Java数据库驱动来提供直接的数据库访问。由于类型4驱动运行在客户端，并且直接访问数据库，因此运行在这个模式暗示要使用一个两层的体系。要在一个n层的体系中使用类型4的驱动,可以通过一个包含有数据访问代码的EJB，并且让该EJB为它的客户提供一个数据库无关的服务。
+
+==== Java命名和目录接口（Java Naming and Directory Interface,JNDI）
+
+JNDI是Java Naming and Directory Interface的简写，中意为：Java命名和目录接口，它是为了对高级网络应用开发中的使用的目录基础结构的访问。实际上这个目录是一个特殊的数据库，提供了对存储数据的快速访问，不像传统的目录服务访问方式--你必须提供不同的API接口来访问类型不同的目录服务（如：LDAP,NIS,ADS等），而它提供了一种标准的API来访问类型不同的目录。据说，使用完整的SDK可以开发那些JNDI还不支持的目录服务提供者。
+
+JNDI是J2EE的一个API，提供了一套标准的接口，以定位用户、机器、网络、对象以及服务。例如，你可以使用JNDI来定位内部网中的一台打印机，你也可以使用它来定位Java对象或连接到一个数据库。JNDI可以用于EJB、RMI-IIOP、JDBC中。它是网络查找定位的标准方法。JNDI API被用来访问命名和目录服务。它提供一个相容的模式来访问和操作企业范围大的资源，例如一个应用服务器中的DNS、LDAP、本地文件系统或者对象。
+
+在JNDI中，一个目录结构中的每一个节点被称为context。每一个JNDI的名字都是与一个context相对的，没有一个绝对名字的概念。一个应用可以使用IntialContext类来得到他的第一个context： `Context ctx = new InitialContext();` 通过这个初始的context，应用就可以经过目录树定位到需要的资源或者对象。例如，假定你已经在WebLogic Server中配置了一个EJB，并且在myApp.myEJB中绑定了home接口。EJB的客户端，在得到这样一个初始的context后，然后就可以使用以下的代码来定位到home接口： `myEJBHome home = cts.lookup(“myApp.myEJB”);` 一旦你得到你所需对象的一个引用(在这个例子中，就是EJB的home接口), 然后你就可以调用它上面的方法。
+
+为了在一个context中查找到一个对象，JNDI还提供方法可以做到： 插入或者绑定一个对象到一个context中。 在你配置一个EJB时，这是非常有效的方法：
+
+- 从一个context中移去一个对象
+- 列出context中的所有对象
+- 创建和删除subcontexts。
+
+==== 企业Java Beans（Enterprise Java Beans,EJB）
+
+J2EE其中一个引人注目的技术是EJB。它提供了一个架构来开发和配置到客户端的分布式商业逻辑，因此可以明显减少开发扩展性、高度复杂企业应用的难度。EJB规范定义了EJB组件应用如何及何时与它们的容器交互。由容器来负责提供普通的服务，例如目录服务、事务管理、安全、资源池和容错。
+
+EJB规范定义了三类基本的bean：
+
+- 会话beans（session beans）：会话beans为业务流程建模，由于它们通常表示执行某个动作，因此可以把它们当作是动词。这个执行的动作可以是任何事情，例如增加数量，访问数据库，调用其他系统，调用其他企业Bean。我们可以举出很多的例子，包括一个计价引擎，一个工作流引擎，一个目录引擎，一个信用卡认证中心，或是一个网上证券交易引擎。
+- 实体beans（Entry beans）：这是持久保存数据的代表 -- 典型的是存储在数据库中 -- 因此在服务器崩溃后数据仍然存在。多个客户端可以使用EJB来表示同样的数据。实体beans为企业数据建模，由于他们表示数据对象（就是缓存数据信息的Java对象），因此可以把它们当做名词。实体beans的例子包括一种产品、一项订单、一个雇员、一张信用卡或是一只股票。会话beans典型的方式是通过实体beans来实现业务目标的，例如一个证券交易引擎（会话beans）处理股票（实体beans）。
+- Message-Driven beans：Message-Driven beans也表示动作，这一点上它类似于会话beans。它们之间的不同点在于你只能够通过发送消息给Message-Driven beans的方式来调用它们。Message-Driven beans的例子包括接受股票交易消息的beans，信用认证消息，或是工作流消息。这些Message-Driven beans也可以调用其他的企业beans。
+
+接着，我们讨论无状态和有状态：
+
+- 无状态beans（Stateless beans）：这是一个单一使用的服务，不维护任何状态，在服务器崩溃时也不再存在，而且生存期相对地短。例如，一个无状态的session beans可能用作执行温度转换。
+- 有状态的beans：它提供了一个传统的与客户端交互的方法，存储客户端的状态。在线购物车就是一个这样一个有状态session beans的典型例子。有状态session beans在服务器崩溃时也不再存在，而且生存期也相对地短，并且每个实例只可以用在一个单一的线程中。
+
+==== JavaServer Pages（JSP）
+
+或许你已经对微软的Active Server Pages非常熟悉；JSP也是类似的技术，不过他是平台无关的。它们都是设计来帮助web内容开发者使用相对较少的代码就可以创建动态的网页。web设计者即使不懂得编程，也可以使用JSP来创建动态的网页。JavaServer Page是HTML代码和Java代码的混合。在客户请求页面的时候，服务器就会处理Java代码，然后返回HTML页面给浏览器。
+
+你可能也听过JHTML，他是一个旧的标准，现在已经被JSP取代了。WebLogic Server不但支持JSP，还支持JHTML。不过，在默认设置下，WebLogic Server是不支持JSP的（对于5.1版本）。你必须编辑weblogic.properties来激活web服务器，对于JSPServlet来说，也是这样。
+
+==== RMI(Remove Method Invoke)
+
+调用远程对象上的方法,它使用了序列化方式在客户端和服务器端传递数据。RMI是一种被EJB使用的更底层的协议，
+
+==== Java Servlet
+
+servlet提供的功能大部分JSP相同，它采用的是一个有点不同的方法。JSP中大部分是HTML代码其中只有少量的Java代码，而servlet则相反，他完全使用Java编写，并且产生HTML代码。
+
+servlet是一个在服务器上运行的Java小程序，他可以扩展web服务器的功能。这些服务器端的应用可以在被请求时动态执行，与传统web服务器上的CGI Perl脚本差不多。CGI脚本和servlet的一个主要不同是：CGI脚本对于每次请求都启动一个全新的进程 -- 需要额外的系统开销 -- 而servlet的执行只要在servlet引擎内启动独立的线程就行了。因此Servlet的扩展性也更好。
+
+在开发servlet时，你通常都是扩展javax.servlet.http.Http.servlet类，并且覆盖他的一些方法。感兴趣的方法包括有：
+
+- servic():作为command-specific方法的一个调度程序。
+- doGet():处理一个来自客户的Http get请求
+- doPost():处理来自一个客户的http post请求
+
+还有一些其他的方法来处理不同类型的HTTP请求(可参考HttpServlet API的文本来得到更多相关的信息)。
+
+==== Java IDL/CORDA
+
+通过Java的IDL支持，开发者可以将Java与CORBA集成。他们可以创建能配置在一个CORBA ORB中的Java对象，也可以创建作为配置在其他ORB内的CORBA对象客户端的Java类。对于通过Java将你的新应用和以前的体统集成，后者提供了一个另外的方法。
+
+==== Java事务体系（JTA）/Java事务服务（JTS）
+
+JTA定义了一个标准的API，应用可以通过他来访问事务监控器。
+
+JTA是CORBA OTS事务监控器的一个基本实现。JTS指定了一个事务管理器的实现（Transaction Manager），这个管理器在一个高级别上支持Java事务API（JTA）规范，并且在一个低级别上实现了OMG OTS规范的Java映射。一个JTS事务管理器为应用服务器、资源管理器、standalone应用和通信资源管理器提供事务服务。
+
+==== JavaMail和JavaBeans激活框架（JavaBeans Activation Framework，JAF）
+
+JavaMail是一个用来访问邮件服务器的API。JavaMail API提供了一套抽象类模型化一个邮件系统。支持SMTP和IMAP服务器。
+
+JavaMail通过使用JavaBeans Activation Framework(JAF)来处理MIME加密的邮件附件。MIME字节流和Java对象间可以互相转化。大多数的应用无需要直接使用JAF。
+
+==== Java信使服务（Java Massaging Service，JMS）
+
+JMS是一个用来和面向信息的中层通信的API。他不但支持点对点的域，也支持发布/订阅域，并且提供对担保信息传送、事无信息传递、持久信息和durable subscribers的支持。对于将你的应用和以前的backend系统集成，JMS提供了另外一个方法。
+
+==== 扩展标记语言（Extensible Markup Language，XML）
+
+XML是一个用来定义其他标记语言的语言。它可用作商业之间的数据共享。XML的发展是与Java分开的；不过，它的目标和Java类似，都是为了与平台无关。通过将Java与XML间开发一个紧密的集成而工作。具体的信息，可浏览Sun站点的Java-XML部分。
+
+==== JAF(JavaBeans Activition Framework)
+
+JavaMail利用JAF来处理MIME编程的邮件附件。MIME的字节流可以转换成Java对象，或者转换自Java对象。大多数应用都可以不需要直接使用JAF。
+
+
+=== JSP 技术使用
+
+JSP是什么？
+
+. jsp运行在服务器
+. jsp(java server page)
+. jsp的基础是servlet（相当于对servlet进行一个包装）
+. jsp是一个综合技术（jsp= html + java片段 + JSP标签（语法）+ javascript + css）
+. jsp无需配置，直接使用，如果修改了jsp文件，不需要重新reload web应用
+. jsp如何访问：http://ip:8080/web应用名/jsp的路径（从webroot开始算）
+. jsp是一种动态网页技术
+
+
+JSP的基础——为什么需要技术？
+
+程序员在开发过程中，发现servlet做界面非常不方便 → JSP。
+
+
+JSP的工作原理
+
+* 每次访问JSP网站web服务器都是先查询表，如果该网页被访问过，表中被返回true,以后访问就不再走翻译过程。
+* 如果编写错误报错，他是报在showTime_jsp.java中的位置，而不是jsp文件的位置
+
+
+JSP的网络拓扑图
+
+JSP基础---原理细节分析
+
+考虑几个问题：
+
+. web服务器是如何调用并执行一个JSP页面的？（看原理图）
+. JSP页面中的html排版标签是如何被发送到客户端的？（JSP2.jsp）
+[source,jsp]
+----
+out.write("<ul>")
+out.write("<li>唐玄奘</li>")
+out.write("<li>孙悟空</li>")
+out.write("<li>猪悟能</li>")
+out.write("<li>沙悟净</li>")
+out.write("</ul>")
+----
+JSP页面中的JAVA代码服务器是如何执行的？
+
+//jsp代码如下
+[source, jsp]
+----
+<%
+    int i=90;
+    int j=i+90;
+%>
+<h1>===测试===</h1>
+<%
+    out.println("j="+j);
+%>
+//当被翻译成JSP后：java文件
+public jspService(){
+    int i=90;
+    int j=i+90;
+}
+----
+
+结论：
+
+. 就是有多个<% %>其实就是相当于是一个大的<% %>.
+. 在<% %>中定义的变量，会成为service函数的局部变量。
+
+web服务器在调用JSP时，会给JSP提供9个内置对象：
+
+|===
+| 内置对象 | 说明 | 对应Servlet内容
+
+|out|向客户端输出的数据，字节流：out.println("");|JspWriter
+|request|域对象，作用范围是一次请求，接受客户端的http请求|HttpServletRequest
+|response|封装jsp产生的响应内容 addCookie(Cookie cookie); sendRedirect("./welcome.jsp");| HttpServletResponse
+|session|域对象，作用范围一次会话，用于保存用户的信息，跟踪用户的行为 setAttribute(String name, Object obj); geetAttribute(String name);|HttpSession
+|application|域对象，多个用户共享该对象，作用范围是整个web应用| ServletContext
+|pageContext|域对象，代表jsp页面的上下文，也是一个域对象，可以setAttribute()，作用范围只是本页面| PageContext
+|exception|代表运行时的一个异常| Exception
+|page|代表jsp这个实例本事(使用比较少)| this
+|config|代表jsp对应的servlet的配置，可以得到web.xml中的参数|ServletConfig
+|===
+
+
+JSP基础---JSP特点
+
+- JSP全程Java Server Page，他和servlet技术一样，都是SUN公司定义的一种用于开发动态网页web资源的技术。。
+- JSP这门技术的最大特点在于，写jsp就像在写htnl，但：
+* 它相比html而言，html只能提供静态数据，而jsp技术允许在页面中嵌套java代码，为用户提供动态数据。
+* 相比servlet而言，servlet很难对数据进行排版，而jsp除了可以用java代码产生动态数据的同时，也很容易对数据进行排版。
+
+
+JSP基础——语法
+
+Java代码和九大内置对象必须写在<%  代码片段  %>中间
+
+[source,jsp]
+----
+<body>
+<%
+pageContext.setAttribute("abc" "oc");
+String val = (String)pageContext.getAttribute("abc");
+out.println("val=" + val);
+%>
+</body>
+----
+
+
+1)	指令元素——用于从JSP发送一个信息到容器，比如设置全局变量，文字编码，引入包等
+①　page指令
+<%@ page contentType=”text/html;charset=gb2312”%>
+page指令中常用的属性有：
+
+|===
+|属性| 说明
+
+|language="xx"|jsp中潜入的代码是 xx， 通常java
+|import="java.lang.String,java.lang.Number"| 在该jsp页面引入包活着某个具体的类
+|session=[true\|false]|是否在jsp页面给你获取session对象
+|buffer=[none\|8k\|指定大小]|给out对象使用的缓冲区是多大，默认8K
+|autoFlash=[true\|false]|当buffer满后，是否自动刷新到浏览器
+|isThreadSage=[true\|false]|默认true，表示该jsp的线程安全由程序员控制，false则对应的Servlet将实现线程安全接口
+|errorPage="相对jsp页面"| 当jsp页面出现错误时，自动跳转到指定jsp页面，要求使用相对路径，当"/"开始时，表示当前web应用的根目录。如果不以"/"开始时，则表示相对本jsp页面
+|isErrorPage=[false\|true]|指定该jsp页面是否专门用于作为error页面，默认false，如果设为true，则可以在该页面直接使用exception内置对象。
+|contentType="text/html;chatset=utf-8"|指定网页以什么方式显示页面
+|pageEncoding="utf-8"|指定Servlet引擎以什么方法翻译jsp 到servlet并指定网页以什么方式显示页面
+|===
+*contentType和pageEncoding的区别：
+
+②　include指令
+<%@include file=’’filename”%>
+
+- 该指令用于引入一个文件(通常是jsp文件)，jsp引擎会吧连个jsp文件翻译成一个servlet文件，因此也称为静态引入。
+- 被引入的jsp文件只需要保留page指令即可，html、body等标签均可省略
+
+③　taglib指令——这个指令允许在JSP页面使用自定义的标签:<myTag: yourTag  num1=”123”>
+
+2)	脚本元素——可以理解就是java的片段scriplet
+
+. scriplet <% java 代码 %>
+. 表达式 <%=java表达式%> <%=rs.getString(1)%>
+. declaration 声明
+* <%! 变量声明 %> 比如： <%! int count=10; %>
+* <%! 函数声明 %>
+
+[source,jsp]
+----
+<%!
+public int add(int num) {
+    int result=0;
+    for(int i=0; i<num; i++) {
+        result=result+i;
+    }
+    return result;
+}
+%>
+----
+
+3)	动作元素——动作元素是使用xml语法写的，是jsp规定的一系列标准动作，在容器处理时，当容器遇到动作元素时，就执行相应的操作
+
+|===
+|<jsp:useBean>|创建一个javabean实例
+|<jsp:setProperty>| 给一个javabean实例设置初始值
+|<jsp:include>| 引入另外一个文件
+|<jsp:param>|给一个jsp设置参数，常常与<jsp:include>结合使用：<jsp:include file="info.jsp"><jsp:param name="paramenter1" value="value1"><jsp:param name="paramenter2" value="value2"></jsp:include>
+|<jsp:getProperty>|获取一个javabean实例的成员变量
+|<jsp:plugin>|使用插件
+|<jsp:forward>|转发
+|<jsp:fallback>|回掉
+|===
+
+<jsp:forward file="">的作用：
+
+在开发jsp过程中，我们通常把jsp放入WEB-INF目录下，目的是为了防止用户直接访问这些jsp文件。
+在WebRoot下我们有一个入口页面，他的主要作用就是转发。
+<jsp:forward file=”/WEB-INF/xx.jsp”></jsp:forward>
+
+*将web页面放到WEB-INF中保护起来，防止被随便访问，在外边留一个入口，进行访问，这个入口就需要forward来获取权限
+<jsp:include page=""></jsp:include>的作用
+
+
+这个引入是动态引入，两个文件都会被编译，
+
+动态引入：<jsp:include page=""></jsp:include>
+静态引入：<%@ include file=""%>
+
+相同点：把一个文件引入到另一个文件
+区别：静态引入会把两个jsp翻译成一个servlet，所以被引入的文件不要包含<body><html>...标签；
+动态引入把两个jsp分别编译，所以被引入的jsp包含有<body><html>标签，也可以
+
+4)	jsp文件的注释
+
+<!-- 注释的内容 -\-> html注释方式，可以使用在jsp中，使用这种方式的注释，servlet会将内容返回来
+<%-- 注释的内容--%> jsp专用注释方式，使用这种方式，在servlet中没有任何输出，建议使用
+

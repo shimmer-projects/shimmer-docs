@@ -1,0 +1,559 @@
+=== 概述
+java注解是在JDK5时引入的新特性，鉴于目前大部分框架(如Spring)都使用了注解简化代码并提高编码的效率，
+因此掌握并深入理解注解对于一个Java工程师是来说是很有必要的事。本篇我们将通过以下几个角度来分析注解的相关知识点
+
+java.lang.annotation
+
+Annotation
+Documented
+ElementType
+Inherited
+Native
+Repeatable
+Retention
+RetentionPolicy
+Target
+
+=== 元注解
+
+所谓元注解其实就是可以注解到别的注解上的注解,被注解的注解称之为组合注解,组合注解具备其上元注解的功能.
+
+==== @Target
+
+Target注解的作用是：描述注解的使用范围(即被修饰的注解可以用在什么地方).
+Target注解用来说明那些被它所注解的注解类可修饰的对象范围：注解可以用于修饰 packages、types（类、接口、枚举、注解类）、类成员（方法、构造方法、成员变量、枚举值）、方法参数和本地变量（如循环变量、catch参数），在定义注解类时使用了@Target 能够更加清晰的知道它能够被用来修饰哪些对象，它的取值范围定义在ElementType 枚举中.
+源码
+
+[source, java]
+----
+@Documented
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.ANNOTATION_TYPE)
+public @interface Target {
+    ElementType[] value();
+}
+
+public enum ElementType {
+    /** Class, interface (including annotation type), or enum declaration */
+    TYPE,
+
+    /** Field declaration (includes enum constants) */
+    FIELD,
+
+    /** Method declaration */
+    METHOD,
+
+    /** Formal parameter declaration */
+    PARAMETER,
+
+    /** Constructor declaration */
+    CONSTRUCTOR,
+
+    /** Local variable declaration */
+    LOCAL_VARIABLE,
+
+    /** Annotation type declaration */
+    ANNOTATION_TYPE,
+
+    /** Package declaration */
+    PACKAGE,
+
+    /**
+     * Type parameter declaration
+     *
+     * @since 1.8
+     */
+    TYPE_PARAMETER,
+
+    /**
+     * Use of a type
+     *
+     * @since 1.8
+     */
+    TYPE_USE,
+
+    /**
+     * Module declaration.
+     *
+     * @since 9
+     */
+    MODULE
+}
+
+----
+
+==== @Retention
+Reteniton注解的作用是：描述注解保留的时间范围(即：被描述的注解在它所修饰的类中可以被保留到何时).
+Reteniton注解用来限定那些被它所注解的注解类在注解到其他类上以后，可被保留到何时，一共有三种策略，定义在RetentionPolicy枚举中.
+
+[source, java]
+----
+@Documented
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.ANNOTATION_TYPE)
+public @interface Retention {
+    /**
+     * Returns the retention policy.
+     * @return the retention policy
+     */
+    RetentionPolicy value();
+}
+
+public enum RetentionPolicy {
+    SOURCE, // 源文件保留
+    CLASS, // 编译期保留，默认值
+    RUNTIME  // 运行期保留，可通过反射去获取注解信息
+}
+
+----
+生命周期长度 SOURCE < CLASS < RUNTIME ，前者能作用的地方后者一定也能作用。如果需要在运行时去动态获取注解信息，那只能用 RUNTIME 注解；如果要在编译时进行一些预处理操作，比如生成一些辅助代码（如 ButterKnife），就用 CLASS注解；如果只是做一些检查性的操作，比如 @Override 和 @SuppressWarnings，则可选用 SOURCE 注解。
+
+
+==== @Documented
+
+Documented注解的作用是：描述在使用 javadoc 工具为类生成帮助文档时是否要保留其注解信息。
+
+[source, java]
+----
+@Documented
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.ANNOTATION_TYPE)
+public @interface Documented {
+}
+----
+
+这里验证@Documented的作用,我们创建一个自定义注解:
+
+[source, java]
+----
+@Documented
+@Target({ElementType.TYPE,ElementType.METHOD})
+public @interface MyDocumentedt {
+
+    public String value() default "这是@Documented注解为文档添加的注释";
+
+}
+----
+
+然后创建一个测试类,在方法和类上都加入自定义的注解
+
+[source, java]
+----
+@MyDocumentedt
+public class MyDocumentedTest {
+    /**
+     * 测试 document
+     * @return String the response
+     */
+    @MyDocumentedt
+    public String test(){
+        return "sdfadsf";
+    }
+}
+----
+打开java文件所在的目录下,打开命令行输入:
+
+----
+javac .\MyDocumentedt.java .\MyDocumentedTest.java
+javadoc -d doc .\MyDocumentedTest.java .\MyDocumentedt.java
+----
+打开生成的doc文件夹,打开index.html,可以发现在类和方法上都保留了 MyDocumentedt 注解信息。
+
+
+==== @Inherited
+
+Inherited注解的作用是：使被它修饰的注解具有继承性（如果某个类使用了被@Inherited修饰的注解，则其子类将自动具有该注解）。
+通过代码来进行验证,创建一个自定义注解
+
+[source, java]
+----
+@Target({ElementType.TYPE})
+@Inherited
+@Retention(RetentionPolicy.RUNTIME)
+public @interface MyInherited {
+}
+----
+
+验证
+
+[source, java]
+----
+@MyInherited
+public class A {
+    public static void main(String[] args) {
+        System.out.println(A.class.getAnnotation(MyInherited.class));
+        System.out.println(B.class.getAnnotation(MyInherited.class));
+        System.out.println(C.class.getAnnotation(MyInherited.class));
+    }
+}
+
+class B extends A{
+}
+
+class C extends B{
+}
+----
+
+==== @Repeatable
+重复注解：即允许在同一申明类型（类，属性，或方法）前多次使用同一个类型注解。
+
+在java8 以前，同一个程序元素前最多只能有一个相同类型的注解；如果需要在同一个元素前使用多个相同类型的注解，则必须使用注解“容器”。 java8之前的做法
+
+[source, java]
+----
+public @interface Roles {
+    Role[] roles();
+}
+public @interface Roles {
+    Role[] value();
+}
+public class RoleAnnoTest {
+    @Roles(roles = {@Role(roleName = "role1"), @Role(roleName = "role2")})
+    public String doString(){
+        return "";
+    }
+}
+----
+
+java8之后增加了重复注解,使用方式如下:
+
+[source, java]
+----
+public @interface Roles {
+    Role[] value();
+}
+@Repeatable(Roles.class)
+public @interface Role {
+    String roleName();
+}
+public class RoleAnnoTest {
+    @Role(roleName = "role1")
+    @Role(roleName = "role2")
+    public String doString(){
+        return "";
+    }
+}
+----
+不同的地方是，创建重复注解 Role 时，加上@Repeatable，指向存储注解 Roles，在使用时候，直接可以重复使用 Role 注解。从上面例子看出，java 8里面做法更适合常规的思维，可读性强一点。但是，仍然需要定义容器注解。
+两种方法获得的效果相同。重复注解只是一种简化写法，这种简化写法是一种假象：多个重复注解其实会被作为“容器”注解的 value 成员的数组元素处理。
+
+==== 类型注解ElementType
+Java8 为 ElementType 枚举增加了TYPE_PARAMETER、TYPE_USE两个枚举值，从而可以使用 @Target(ElementType_TYPE_USE) 修饰注解定义，这种注解被称为类型注解，可以用在任何使用到类型的地方。
+在 java8 以前，注解只能用在各种程序元素（定义类、定义接口、定义方法、定义成员变量…）上。从 java8 开始，类型注解可以用在任何使用到类型的地方。
+
+* TYPE_PARAMETER：表示该注解能写在类型参数的声明语句中。
+* TYPE_USE：表示注解可以再任何用到类型的地方使用，比如允许在如下位置使用：
+** 创建对象（用 new 关键字创建）
+** 类型转换
+** 使用 implements 实现接口
+** 使用 throws 声明抛出异常
+
+[source, java]
+----
+public class TypeUserTest {
+
+    public static void main(String[] args) {
+        String str = "str";
+        Object obj = (@isNotNull Object) str;
+    }
+
+}
+
+@Target(ElementType.TYPE_USE)
+@interface isNotNull{
+}
+----
+这种无处不在的注解，可以让编译器执行更严格的代码检查，从而提高程序的健壮性。
+
+
+=== 常用内置注解
+
+
+=== 自定义注解
+通过上面的学习已经初步了解了元注解是怎么一回事,下面撸一个自定义注解来融会贯通. 自定义注解
+
+[source, java]
+----
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.FIELD)
+public @interface Name {
+
+    public String value() default "";
+}
+----
+
+[source, java]
+----
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.FIELD)
+public @interface Sex {
+
+    public enum GenderType {
+        Male("男"),
+        Female("女");
+        private String genderStr;
+        private GenderType(String arg0) {
+            this.genderStr = arg0;
+        }
+        @Override
+        public String toString() {
+            return genderStr;
+        }
+    }
+    GenderType gender() default GenderType.Male;
+}
+----
+使用自定义注解的实体类
+
+[source, java]
+----
+@Data
+public class User {
+
+    @Name(value = "wtj")
+    public String name;
+    public String age;
+    @Sex(gender = Sex.GenderType.Male)
+    public String sex;
+
+}
+----
+
+[source, java]
+----
+public class AnnotionUtils {
+
+    public static String getInfo(Class<?> cs){
+        String result = "";
+        //通过反射获取所有声明的字段
+        Field[] declaredFields = cs.getDeclaredFields();
+        //获取所有字段
+        for (Field field : declaredFields){
+            if(field.isAnnotationPresent(Name.class)){
+                //获取程序元素上的注解
+                Name annotation = field.getAnnotation(Name.class);
+                String value = annotation.value();
+                result += (field.getName() + ":" + value + "\n");
+            }
+            if(field.isAnnotationPresent(Sex.class)){
+                Sex annotation = field.getAnnotation(Sex.class);
+                String value = annotation.gender().name();
+                result += (field.getName() + ":" + value + "\n");
+            }
+        }
+        return result;
+    }
+
+    public static void main(String[] args){
+        String info = getInfo(User.class);
+        System.out.println(info);
+    }
+
+}
+----
+
+main方法运行后就可以在控制台中看到使用注解时传入的数据了.
+上面就是一个简单的注解使用的demo,当然,在实际工作中使用的会相对复杂,这就需要我们根据业务需求及代码需求进行封装和使用自定义注解了.
+
+
+=== 注解与反射
+
+
+
+- 注解Annotation
+
+1. JDK提供的常用的三个注解
+
+     @Override：限定重写父类方法，该注解只能用于方法
+
+     @Deprecated:用于表示某个程序元素（类，方法等）已过时
+
+     @SuppressWarnings:抑制编译器警告
+
+2. 如何自定义注解
+
+     以SuppressWarning为类进行创建即可
+
+3. 元注解
+
+     Retention：指明生命周期
+
+     Target：指明修饰范围
+
+     Documented：是否javadoc解析
+
+     Inherited：是否具有继承性
+
+### 了解注解及java提供的几个基本注解
+
+从JDK1.5开始，Java增加了对元数据（MetaData）的支持，也就是Annotation(注解)
+
+Annotation其实就是代码里的特殊标记，这些标记可以在编译，类加载，运行时呗读取，并执行相应的处理。通过使用Annotation，程序可以在不改变原有逻辑的情况下，再远文件中嵌入一些补充信息。
+
+Annotation可以像修饰符一样被使用，可用于修饰包、类、构造方法、方法、成员变量、参数、局部变量的声明，这些信息被保存在Annotation的name=value对中。
+
+Annotation能被用来为程序元素(包、类、构造方法、方法、成员变量、参数、局部变量)设置元数据
+
+* 先通过@SuppressWarning的应用了解注解
+
+  通过Systemc.runFinallizersOnExit(true)；的编译警告引出@SuppressWarning({})
+
+  deprecation , unchecked, unused, all, rawtypes
+
+* @Depreccated 过时了
+
+  直接在刚才的类中增加一个方方法，并加上@Deprecated标注，在另外一个类中调用这个方法
+
+* @Override
+
+  public booean equals(Reflect other)方法与HashSet结合
+
+  如果重写equals方法时，没有使用Override, 而写的类型不是Object，那么只是一种重载模式，并没有起到重写的作用。
+
+  @Override的作用就是为了验证这个方法是不是重写父类的方法
+
+* 总结
+
+  注解相当于一种标记，在程序中加了注解就相当于为程序打上了某种标记，没加，则等于没有某种标记。以后，javac编译器，开发工具和其他程序可以用反射来了解你的类几个钟元素上有无何种标记，看你有什么标记，就去干相应的是。标记可以加在包、类、字段、方法、方法的参数以及局部变量上。
+
+  java.lang包中有以上提到的三种注解
+
+  #### 注解的应用结构图
+
+  | 注解类               | 应用了“注解类”的类       | 对“应用了注解类的类”进行反射操作的类                         |
+  | -------------------- | ------------------------ | ------------------------------------------------------------ |
+  | @interface A{<br />} | @A<br />class B {<br />} | class C{<br />B.class.isAnnotionPresent(A.class);<br />A a = B.class.getAnnotion(A.class)<br />} |
+
+  注解就相当于一个你的源程序中要调用的一个类，要在源程序中应用某个注解，得先准备好这个注解类。
+
+#### 元注解
+
+元注解就是定义注解时使用的注解,用于修饰其他Annotation定义
+
+JDK1.5以后提供了专门在注解上的注解类型，有以下几个
+
+* Retention(RetentionPolicy)
+* Retention注解有三个阶段
+* RetentionPolicy.SOURCE  编译器直接丢弃这种策略的注解
+* RetentionPolicy.CLASS (默认)  编译器将把注释记录在class文件中，当运行java程序时，JVM不会保留注解。这是默认值
+* RetentionPolicy.RUNTIME 编译器将把注释记录在class文件中，当运行java程序时，JVM会保留注释，程序可以通过反射获取该注释。
+* 只能用于修饰一个Annotation定义，用于指定该Annotation可以保留多长时间，@Rentention包含一个RetentionPolicy类型的成员变量，使用@Retention时必须为该value成员变量指定值
+* @Target(ElementType[])
+* 指定该注解作用范围，用于修饰Annotation定义，用于指定被修饰的Annotation能用于修饰哪些程序元素。也包含了一个名为value的成员变量
+* Type是类、接口、枚举等所有的实现接口
+* @Documented
+* 用于指定被该元Annotation修饰的Annotation类将被javadoc工具提取成文档
+* 定义为Documented的注解必须设置Retention的值为RUNTIME
+* @Inherited
+* 被它修饰的Annotation将具有集成性，如果某个类使用了这个注解修饰的Annotation，则其子类将自动具有该注解。实际应用中比较少用
+
+#### 为注解增加基本属性
+
+* 什么是注解的属性
+
+  一个注解相当于一个胸牌，人富国你的胸前贴了胸牌，就是学生，否则就不是。如果害相区分出是哪个班的学生，这时候可以为胸牌在鞥加一个方属性来进行区分。加了属性的编辑想过为@MyAnnotation(color="red")
+
+* 定义基本类个的属性和应用属性
+
+* 在注解中增加String color()
+* @MyAnnotation(color="red")
+
+* 用反射方式获得注解对应的示例对象后，在通过该对象调用属性对应的方法
+
+* MyAnnotation a = App.class.getAnnotation(MyAnnotation.class);
+* System.out.println(a.color());
+* 可以认为@MyAnnotation是MyAnnotation的一个实例对象
+
+* 为属性指定缺省值
+
+* String color() default "yellow";
+
+* value属性
+
+* String value() default "bru";
+* 如果注解中有一个名称为value的属性，且你只想设置value属性（即其他属性都采用默认值）
+
+#### 为注解增加高级属性
+
+* 数组类型的属性
+
+* int[] arrayAttr() default {1,2,3}
+* @A(arrayAttr={2,3,4})
+* 如果数组属性中只有一个元素，这时候属性值部分可以省略大括号
+
+* 枚举类型的属性
+
+* EnumTest.TrafficLamp lamp();
+* @A(lamp=EnumTest.TrafficLoamp.GREEN)
+
+* 注解类型的属性
+
+* MetaAnnotation annotationAttr() default @MetaAnnotation("xx")
+
+* @A(annotationAttr=@MetaAnnotation("yyy"))
+
+* 可以认为上面这个@A是A类的一个实例对象，同样的道理，可以认为上面这个@MetaAnnotation是MetaAnnotation类的一个实例对象
+
+    调用代码：
+
+    MetaAnnotation ma = A.annotationAttr();
+
+    System.out.println(ma.value());
+
+```java
+//@A(color = "red", value = "abc")
+//@A("abc")
+//@A(value = "3", arrayAttr = {2,3,4,5})
+@A(annotationAttr = @MetaAnnotation("flx"), value = "3", arrayAttr = {2,3,4,5})
+public class App {
+
+    public static void main( String[] args ) throws Exception {
+
+        // 判断A这个Annocation在不在
+        boolean b = App.class.isAnnotationPresent(A.class);
+        if (b) {
+            A a = App.class.getAnnotation(A.class);
+            System.out.println(a);
+            System.out.println(a.color());
+            System.out.println(a.value());
+            System.out.println(a.arrayAttr().length);
+            System.out.println(a.lamp());
+            System.out.println(a.annotationAttr().value());
+        }
+    }
+}
+
+
+
+/** 元注解  元信息  元数据*/
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.TYPE, ElementType.METHOD})
+@interface A {
+    String color() default "yellow";
+
+    // 属性比较特殊，如果只有这一个属性，我们输入参数时，可以不指定属性名
+    String value();
+
+    // 数组类型
+    int[] arrayAttr() default {1,2,3};
+
+    // 枚举类型
+    EnumTest.TracfficLamp lamp() default EnumTest.TracfficLamp.GREEN;
+
+    // 注解类型
+    MetaAnnotation annotationAttr();
+
+}
+
+class EnumTest{
+    enum  TracfficLamp{
+        GREEN,RED,YELLOW;
+    }
+}
+
+@Retention(RetentionPolicy.RUNTIME)
+@interface MetaAnnotation {
+    String value();
+}
+```
+

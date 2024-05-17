@@ -1,0 +1,777 @@
+=== 发展
+
+在java1.0中，对日期和时间的支持只能依赖java.util.Date类。正如类名所表达的，这个类无法表示日期，只能以毫秒的精度表示时间。更糟糕的是它的易用性，由于某些未知的设计决策，这个类的易用性被深深的损害了，比如：年份的起始日期选择是1990年，月份的起始从0开始。
+
+在java1.1中，Date类中的很多方法被废弃了，取而代之的是java.util.Calendar类。Calendar类也有类似的问题和设计缺陷，导致使用这些方法写出的代码非常容易出错。比如月份依旧是从0开始计算（拿掉了由1990年开始计算年份这一设计）。更糟的是，有的特性只在某一个类有提供，比如用于语言无关方式格式化和解析日期或时间的DateFormat方法就只在Date类有。DateFormat不是线程安全的，二个线程同时使用formatter解析日期，你可能会得到无法预期的结果。
+
+由于Java SE 8之前的标准日期和时间类很难用，而且有线程安全等诸多问题。 为了弥补这些不足，第三方日期和时间库Joda-Time在Java SE 8之前成为Java的实际标准日期和时间库。但是，从Java SE 8起，Java增加了java.time 包，对 Java 在日期 API 方面的进行了增强，这些代码实现了 JSR-310 的标准。Joda 的官方推荐迁移到 Java8 的时间类库上来。
+
+如果我们工作中的jdk版本是1.8版本之前可以使用Joda Time库。如果使用Java SE 8及以后的版本，那么最好迁回到java.time库的使用。
+
+=== 关于时间相关概念的一些解释
+
+- Epoch Time
+UNIX时间，或称POSIX时间是UNIX或类UNIX系统使用的时间表示方式：从UTC1970年1月1日0时0分0秒起至现在的总秒数，不考虑闰秒。 在多数Unix系统上Unix时间可以透过date +%s指令来检查。
+
+- 时间戳
+UNIX时间戳是从1970年1月1日（UTC/GMT的午夜）开始所经过的秒数，不考虑闰秒。
+
+- 时间
+我们日常所接触的时间，即年月日时分秒等
+
+- 时区
+时区是地球上的区域使用同一个时间定义。以前，人们通过观察太阳的位置（时角）决定时间，这就使得不同经度的地方的时间有所不同（地方时）。1863年，首次使用时区的概念。时区通过设立一个区域的标准时间部分地解决了这个问题。
+
+- 时差
+
+  世界各国位于地球不同位置上，因此不同国家，特别是东西跨度大的国家日出、日落时间必定有所偏差。这些偏差就是所谓的时差。
+
+- 理论时区
+理论时区以被15整除的经线为中心，向东西两侧延伸7.5度，即每15°划分一个时区，这是理论时区。理论时区的时间采用其中央经线（或标准经线）的地方时。所以每差一个时区，区时相差一个小时，相差多少个时区，就相差多少个小时。另外，由于东半球时间较快；西半球时间较慢，为了避免日期的紊乱，提出国际换日线的概念。
+
+- 法定时区
+但是，为了避开国界线，有的时区的形状并不规则，而且比较大的国家以国家内部行政分界线为时区界线，这是实际时区，即法定时区。
+
+- 时区表示法
+采用UTC偏移量形式表示
+
+- 年表
+全世界有很多的纪年法，例如中国的公元纪年法(民国纪年)，日本的年号纪年，泰国的佛教徒纪年法，希腊的塞琉古纪年，ISO 8601国际标准纪年法等。
+java.time中默认实现了以上的几种纪年法，Java默认是ISO 8601国际标准
+
+- ISO 8601
+国际标准ISO 8601，是国际标准化组织的日期和时间的表示方法，全称为《数据存储和交换形式·信息交换·日期和时间的表示方法》。目前是2004年12月1日发行的第三版“ISO8601:2004”以替代1998年的第一版“ISO8601:1998”与2000年的第二版“ISO8601:2000”。
+
+
+
+=== 在计算机中对于时间的处理上的一些需求
+
+1. 获取当前的时间
+2. 创建指定的时间
+3. 时间的计算
+4. 时间的比较
+5. 时间的获取，获取年、月、日、周、时、分、秒、毫秒、纳秒、一年中的第几天、一年中的第几周、一年中的第几个季度、一个月中的第几周、一周中的第几天(星期)
+6. 时间与时间戳之间的转换
+7. 时间与字符串之间的转换(时间格式化)
+
+
+
+=== java1.0 的世界 java.util.Date
+
+==== 获取当前的时间
+
+----
+Date d = new Date
+----
+
+==== 创建指定的时间
+
+----
+Date date3 = new Date(1603272177998L);
+Date d = new Date(2000, 2,2,2,2,2);
+d = new Date(2000, 2,2,2,2);
+d = new Date(2000, 2,2);
+System.out.println(d);
+指定时间获取时间戳
+long utc = Date.UTC(2000, 2,2,2,2,2);
+----
+
+==== 时间的计算
+
+没有专门的计算工具类，只能通过程序进行手动创建
+
+==== 时间的比较
+
+----
+Date d1 = new Date();
+Date d2 = new Date();
+boolean after = d1.after(d2);
+System.out.println(after);
+boolean before = d2.before(d1);
+----
+
+==== 时间与时间戳之间的转换
+
+----
+long time = new Date().getTime();
+Date d = new Date(1603272177998L);
+Date d = new Date();
+d.setTime(1603272177998L);
+System.out.println(d);
+----
+
+==== 时间与字符串之间的转换
+
+----
+SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:dd.SSS");
+// 时间转字符串
+String format = sdf.format(new Date());
+System.out.println(format);
+// 字符串转时间
+Date parse = sdf.parse("2020-10-21 09:44:06.136");
+System.out.println(parse);
+----
+
+
+
+=== java1.1 的世界 java.util.Calender
+
+Calendar的所有操作也都要借助于java.util.Date
+
+==== 获取当前的时间
+
+----
+Calendar instance = Calendar.getInstance();
+Date time = instance.getTime();
+----
+
+==== 创建指定的时间
+
+----
+Calendar instance = Calendar.getInstance();
+instance.set(2000, Calendar.MARCH,2,2,2,2);
+// instance.set(2000, 2,2,2,2);
+// instance.set(2000, 2,2);
+System.out.println(instance.getTime());
+instance.set(Calendar.MONTH, Calendar.OCTOBER);
+System.out.println(instance.getTime());
+----
+
+
+
+==== 时间的计算
+
+----
+Calendar instance = Calendar.getInstance();
+System.out.println(instance.getTime());
+instance.add(Calendar.MONTH, 5);
+System.out.println(instance.getTime());
+instance.add(Calendar.MONTH, -4);
+System.out.println(instance.getTime());
+----
+
+==== 时间的比较
+
+----
+Calendar instance = Calendar.getInstance();
+boolean after = instance.after(Calendar.getInstance());
+System.out.println(after);
+boolean before = instance.before(Calendar.getInstance());
+System.out.println(before);
+----
+
+
+
+==== 时间与时间戳之间的转换
+
+----
+Calendar instance = Calendar.getInstance();
+long timeInMillis = instance.getTimeInMillis();
+System.out.println(timeInMillis);
+long time = instance.getTime().getTime();
+System.out.println(time);
+----
+
+==== 时间与字符串之间的转换
+
+只能先转换成Date之后再使用SimpleDateFormat进行转换
+
+
+
+=== joda-time和java.time中一些设计概念说明
+
+|===
+| 概念                | 说明                                                        | jode-time | java.time
+
+| Instant             | 表示一个时刻，使用从 1970-01-01 00:00:00 至今的毫秒数表示。 | 有        | 有
+| Interval            | 表示两个 instant 之间的间隔，左闭右开。                     | 有        | 无
+| Duration/Period     | 用毫秒表示的时间段，通常从 interval 获得 Joda time。        | 有        | 有
+| Period              | 同样表示时间段，比如 3年，5个月，而 duration 使用毫秒表示。 | 有        | 有
+| Chronology          | 年表，这是 joda-time 设计的基础。                           | 有        | 有
+| DateTimeZone/ZoneId | 时区                                                        | 有        | 有
+|===
+
+
+=== joda-time 的世界
+
+* 仓库地址：https://mvnrepository.com/artifact/joda-time/joda-time
+* 源码地址：https://github.com/JodaOrg/joda-time
+* 官网地址：https://www.joda.org/joda-time/
+
+
+Instant
+表示一个时刻，使用从 1970-01-01 00:00:00 至今的毫秒数表示
+
+----
+DateTime dt = new DateTime();
+Instant instant = dt.toInstant()
+----
+
+Interval
+表示两个 instant 之间的间隔，左闭右开。
+
+----
+DateTime dt = new DateTime();
+DateTime dt1 = new DateTime();
+Interval interval = new Interval(dt.toInstant(), dt1.toInstant());
+----
+
+Duration
+用毫秒表示的时间段，通常从 interval 获得 Joda time:
+
+----
+DateTime dt = new DateTime();
+DateTime dt1 = new DateTime();
+Interval interval = new Interval(dt.toInstant(), dt1.toInstant());
+Duration duration = interval.toInstant();
+----
+
+
+
+Period
+同样表示时间段，比如 3年，5个月，而 duration 使用毫秒表示
+
+----
+DateTime dt1 = new DateTime();
+DateTime dt2 = new DateTime();
+Period period = Period.fieldDifference(dt1.toLocalDateTime(), dt2.toLocalDateTime());
+----
+
+
+
+Chronology
+年表，这是 joda-time 设计的基础
+
+----
+DateTime dt = new DateTime();
+Chronology chronology = dt.getChronology();
+----
+
+
+
+DateTimeZone
+
+----
+DateTime dt = new DateTime();
+DateTimeZone dateTimeZone = dt.getZone();
+Set<String> zones = DateTimeZone.getAvailableIDs();
+----
+
+
+
+==== 获取当前的时间
+
+----
+DateTime dt = new DateTime();
+LocalDateTime localDateTime = dt.toLocalDateTime();
+long mills = dt.getMillis();
+----
+
+
+
+==== 创建指定的时间
+
+----
+DateTime otherTime = new DateTime(2020, 10, 16, 1, 1, 1, 1);
+otherTime = new DateTime(2020, 10, 16, 1, 1, 1);
+otherTime = new DateTime(2020, 10, 16, 1,  1);
+otherTime = new DateTime(2020);
+System.out.println(otherTime);
+----
+
+
+
+==== 时间的计算
+
+----
+DateTime dt = new DateTime();
+dt = dt.plusDays(2); //当前日期添加两天
+dt = dt.plusHours(5); // 当前时间加上两个小时
+dt = dt.minusDays(1); // 当前日期减一天
+dt = dt.minusHours(2); // 当前日期减两个小时
+----
+
+
+
+==== 时间的比较
+
+----
+DateTime now = new DateTime();
+DateTime otherTime = new DateTime(2020, 10, 16, 1, 1, 1, 1);
+boolean before = now.isBefore(otherTime);
+System.out.println(before);
+boolean after = now.isAfter(otherTime);
+System.out.println(after);
+boolean afterNow = otherTime.isAfterNow();
+System.out.println(afterNow);
+boolean beforeNow = otherTime.isBeforeNow();
+System.out.println(beforeNow);
+boolean afterInstant = otherTime.isAfter(now.toInstant());
+System.out.println(afterInstant);
+boolean equal = otherTime.isEqual(now.getMillis());
+System.out.println(equal);
+----
+
+
+
+==== 时间的获取
+
+----
+DateTime dateTime = new DateTime(2020, 10, 16, 1,1,1,1);
+// 年
+int year = dateTime.getYear();
+System.out.println(year);
+// 月
+int monthOfYear = dateTime.getMonthOfYear();
+System.out.println(monthOfYear);
+// 日
+int dayOfMonth = dateTime.getDayOfMonth();
+System.out.println(dayOfMonth);
+// 时
+int hourOfDay = dateTime.getHourOfDay();
+System.out.println(hourOfDay);
+// 分
+int minuteOfHour = dateTime.getMinuteOfHour();
+System.out.println(minuteOfHour);
+// 秒
+int secondOfMinute = dateTime.getSecondOfMinute();
+System.out.println(secondOfMinute);
+// 毫秒
+int millisOfSecond = dateTime.getMillisOfSecond();
+System.out.println(millisOfSecond);
+// 纳秒, joda-time中只有毫秒，没有纳秒
+// 一年中的第几天
+int dayOfYear = dateTime.getDayOfYear();
+System.out.println(dayOfYear);
+// 一年中的第几周
+int weekOfWeekyear = dateTime.getWeekOfWeekyear();
+System.out.println(weekOfWeekyear);
+// 一个月中的第几周,没有直接提供的API
+// 一周中的第几天
+int dayOfWeek = dateTime.getDayOfWeek();
+System.out.println(dayOfWeek);
+// 当前周所在的年
+int weekyear = dateTime.getWeekyear();
+System.out.println(weekyear);
+----
+
+java.time下还有两个类：LocalDate和LocalTime，LocalDate只有年月日，LocalTime只有时分秒纳秒，用法和上文基本一样，
+LocalDateTime内部就是这两个类的组合，LocalDateTime功能也是这两个类功能的组合。
+
+==== 时间与时间戳之间的转换
+
+----
+// from joda-time to long
+DateTime now = new DateTime();
+long millis = now.getMillis();
+System.out.println(millis);
+Instant instant = now.toInstant();
+System.out.println(instant.getMillis());
+
+// from long to joda-time
+DateTime dateTime = new DateTime(1603357704344L);
+System.out.println(dateTime);
+----
+
+
+
+==== 时间与字符串之间的转换(时间格式化)
+
+----
+// 方式一
+DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
+DateTime dt = new DateTime();
+System.out.println(dt.toString(formatter));
+
+// 方式二
+String dateFormat = "yyyy-MM-dd HH:mm:ss";
+System.out.println(dt.toString(dateFormat));
+----
+
+
+
+=== java.time 的世界
+
+Instant
+
+java.time 包中的 Instant 类代表的是某个时间（有点像 java.util.Date），准确的说是：”是不带时区的即时时间点“，它是精确到纳秒的（而不是象旧版本的Date精确到毫秒）。
+如果使用纳秒去表示一个时间则原来使用一位Long类型是不够的，需要占用更多一点的存储空间，实际上其内部是由两个Long字段组成，第一个部分保存的是自标准Java计算时代（就是1970年1月1日开始）到现在的秒数，第二部分保存的是纳秒数（永远不会超过999,999,999）。
+
+----
+Clock clock = Clock.systemDefaultZone();
+Instant instant = clock.instant();
+
+Instant now = Instant.now();
+System.out.println(now);
+----
+
+----
+ //instant 根据毫秒值或者date转换为instant 类方法 （java.time）
+Instant instant2 = Instant.ofEpochMilli(date.getTime());
+System.out.println(instant2);
+//instant 根据秒值或者date转换为instant 类方法 （java.time）
+Instant instant3 = Instant.ofEpochSecond(60 * 60L);
+Instant instant4 = Instant.ofEpochSecond(60 * 60 * 24L);
+System.out.println(instant3);
+System.out.println(instant4);
+//instant 第一个参数指定秒数，第二个单位指定纳秒数，这样得到的instant会包含纳秒的数据 1000000000纳秒（9位）=1秒
+Instant instant5 = Instant.ofEpochSecond(60 * 60 * 24L,  1000000000*60L);
+System.out.println(instant5);
+//instant 将字符串类型的instant转换为instantd对象，如：1970-01-02T00:01:00Z，但是date的结果字符串不可以转换，会报错DateTimeParseException
+//注意：必须传入的是符合 UTC格式的字符串
+Instant parse = Instant.parse("1970-01-01T01:00:00Z");
+System.out.println(parse+"parse");
+//instant 在现有的instant的时间上追加些时间，下面例子追加了5小时10分钟，这里plus会产生新的instant对象
+Instant plus = instant.plus(Duration.ofHours(5).plusMinutes(10));
+System.out.println(instant+" instant "+plus+"plus");
+System.out.println(instant == plus);//plus会产生新的instant对象 所以结果位false
+//instant 获取其5天前的instant(此刻)
+Instant minus = instant.minus(5, ChronoUnit.HOURS);
+System.out.println(instant+" instant "+minus+" minus");
+//也可以直接调用相关减法方法,效果跟上面的方法一样
+Instant instant6 = instant.minusSeconds(60 * 60 * 5);
+System.out.println(instant+" instant "+instant6+" instant6");
+//减法方法,效果跟上面的方法一样
+Instant minus1 = instant.minus(Duration.ofHours(5));
+System.out.println(instant+" instant "+minus1+" minus1");
+//计算两个Instant之间的秒数， ChronoUnit用的什么，得到的结果就是什么单位
+System.out.println(instant+" instant "+instant6+" instant6");
+long between = ChronoUnit.SECONDS.between(instant6, instant);
+System.out.println(between);
+//比较两个instant 相等 0， 前者时间纳秒值大于后者 1，小于后者 -1或小于0
+int i = instant.compareTo(instant6);
+System.out.println(i);
+//判断instant时间前后，前者在后者之后返回true,反之false
+boolean after = instant.isAfter(instant6);
+System.out.println(after);
+//判断instant时间前后，前者在后者之前返回true,反之false，正好与上面相反
+boolean before = instant.isBefore(instant6);
+System.out.println(before);
+// Instant获取long类型的10位秒数、13位毫秒数
+Instant now = Instant.now().plusMillis(TimeUnit.HOURS.toMillis(8));
+System.out.println("秒数:"+now.getEpochSecond());
+System.out.println("毫秒数:"+now.toEpochMilli());
+LocalDateTime输出毫秒数的方式，比Instant多一步转换
+LocalDateTime localDateTime = LocalDateTime.now();
+//LocalDateTime转Instant
+Instant localDateTime2Instant = localDateTime.atZone(ZoneId.systemDefault()).toInstant();
+System.out.println("LocalDateTime 毫秒数:"+localDateTime2Instant.toEpochMilli());
+// Instant可以直接将UTC格式时间进行格式化，只能是UTC格式的，其他的不行
+Instant parse = Instant.parse("2020-12-12T12:12:12Z");
+System.out.println(parse.toEpochMilli());
+----
+
+
+注意：因为上文提到过他是不带时区的即刻时间点，即使你使用`Instant instant = Instant.now(Clock.systemDefaultZone());`
+方式获取的结果也是相同的，因为它记录的是时间戳，通过查看源代码发现Instant.now()使用等是UTC时间`Clock.systemUTC().instant()`。
+LocalDate、LocalDateTime 的now()方法使用的是系统默认时区 不存在Instant.now()的时间问题。
+
+如果一定要将其修改为Asia/Shanghai时区的话，可以通过时间计算给其增加8个小时即可修改为东八区的时间。
+
+----
+Instant now = Instant.now().plusMillis(TimeUnit.HOURS.toMillis(8));
+System.out.println(now);
+----
+
+
+
+Period
+
+----
+DateTime dt1 = new DateTime();
+DateTime dt2 = new DateTime();
+Period period = Period.fieldDifference(dt1.toLocalDateTime(), dt2.toLocalDateTime());
+----
+
+通过Period实现Duration的功能
+
+----
+LocalDateTime l1 = LocalDateTime.now();
+LocalDateTime l2 = LocalDateTime.now();
+Period period = Period.between(l1.toLocalDate(), l2.toLocalDate());
+----
+
+
+
+Chronology
+
+----
+LocalDateTime localDateTime = LocalDateTime.now();
+Chronology ch = localDateTime.getChronology();
+----
+
+
+
+DateTimeZone
+
+----
+Clock clock = Clock.systemDefaultZone();
+ZoneId zoneId = clock.getZone();
+Set<String> zones = ZoneId.getAvailableZoneIds();
+----
+
+
+
+LocalDate  LocalTime LocalDateTime
+
+LocalDateTime它表示的是不带时区的 日期及时间，替换之前的Calendar。看上去，LocalDateTime和Instant很象，但记得的是“Instant中是不带时区的即时时间点。
+可能有人说，即时的时间点 不就是日期＋时间么？看上去是这样的，但还是有所区别，比如LocalDateTime对于用户来说，可能就只是一个简单的日期和时间的概念，
+考虑如下的 例子：两个人都在2013年7月2日11点出生，第一个人是在英国出生，而第二个是在加尼福利亚，如果我们问他们是在什么时候出生的话，
+则他们看上去都是 在同样的时间出生（就是LocalDateTime所表达的），但如果我们根据时间线（如格林威治时间线）去仔细考察，
+则会发现在出生的人会比在英国出生的人稍微晚几个小时（这就是Instant所表达的概念，并且要将其转换为UTC格式的时间）。
+
+----
+//LocalDateTime 相当于calendar
+LocalDateTime localDateTime = LocalDateTime.now();
+System.out.println(localDateTime+" localDateTime1");
+//当前时间加上5小时，分钟等一样的用法，支持链式编程
+LocalDateTime localDateTime1 = localDateTime.plusHours(5);
+System.out.println(localDateTime1+" localDateTime1");
+//当前时间加上5小时，分钟等一样的用法，支持链式编程 但是这里localtime只是时间，不展示年月日，只展示如：15:26:50.398 时分秒毫秒
+LocalTime localDateTime2 = localDateTime.toLocalTime().plusHours(5);
+//当前时间加上5天，只展示年月日，不展示时分秒毫秒,下面是两种写法，都可以
+LocalDate localDate = localDateTime.toLocalDate().plusDays(5);
+System.out.println(localDateTime2+" localDateTime2 "+localDate+ " localDate");
+LocalDate plus = localDateTime.toLocalDate().plus(Period.ofDays(5));
+System.out.println(plus+"  plus");
+----
+
+
+
+==== 获取当前的时间
+
+----
+LocalDateTime localDateTime = LocalDateTime.now();
+
+// 获取时间戳
+Clock clock = Clock.systemDefaultZone();
+long mills = clock.millis();
+----
+
+
+
+==== 创建指定的时间
+
+----
+LocalDateTime otherTime = LocalDateTime.of(2020, 10, 22, 15, 36, 55, 1000);
+otherTime = LocalDateTime.of(2020, 10, 22, 15, 36, 55);
+otherTime = LocalDateTime.of(2020, 10, 22, 15, 36);
+System.out.println(otherTime);
+----
+
+
+
+==== 时间的计算
+
+----
+LocalDateTime localDateTime = LocalDateTime.now();
+localDateTime = localDateTime.plusDays(2); // 增加两天
+localDateTime = localDateTime.plusHours(2); // 增加两个小时
+localDateTime = localDateTime.minusDays(1); //减少一天
+localDateTime = localDateTime.minusHours(1); // 减少一个小时
+----
+
+
+
+==== 时间的比较
+
+----
+LocalDateTime now = LocalDateTime.now();
+LocalDateTime otherTime = LocalDateTime.of(2020, 1, 2, 3, 4, 5, 6);
+boolean before = now.isBefore(otherTime);
+System.out.println(before);
+boolean after = now.isAfter(otherTime);
+System.out.println(after);
+boolean equal = now.isEqual(otherTime);
+System.out.println(equal);
+----
+
+==== 时间的获取
+
+----
+LocalDateTime now = LocalDateTime.now();
+// 年
+int year = now.getYear();
+System.out.println(year);
+// 月
+Month month = now.getMonth();
+System.out.println(month);
+// 日
+int dayOfMonth = now.getDayOfMonth();
+System.out.println(dayOfMonth);
+// 时
+int hour = now.getHour();
+System.out.println(hour);
+// 分
+int minute = now.getMinute();
+System.out.println(minute);
+// 秒
+int second = now.getSecond();
+System.out.println(second);
+// 毫秒, java.time中没有毫秒，只有纳秒
+// 纳秒
+int nano = now.getNano();
+System.out.println(nano);
+// 一年中的第几天
+int dayOfYear = now.getDayOfYear();
+System.out.println(dayOfYear);
+
+// 一年中的第几周
+WeekFields weekFields = WeekFields.of(DayOfWeek.MONDAY, 1);
+int weekOfYear = now.get(weekFields.weekOfYear());
+System.out.println(weekOfYear);
+// 一个月中的第几周
+System.out.println(now.get(weekFields.weekOfMonth()));
+// 一周中的第几天
+System.out.println(now.get(weekFields.dayOfWeek()));
+// 一周中的第几天(星期)
+DayOfWeek dayOfWeek = now.getDayOfWeek();
+System.out.println(dayOfWeek);
+// 当前周所在的年
+System.out.println(now.get(weekFields.weekBasedYear()));
+----
+
+
+
+==== 时间与时间戳之间的转换
+
+----
+LocalDateTime now = LocalDateTime.now();
+Instant instant = now.atZone(ZoneId.systemDefault()).toInstant();
+System.out.println(instant.toEpochMilli());
+
+long l = LocalDateTime.now().toEpochSecond(ZoneOffset.ofHours(8));
+System.out.println(l);
+
+LocalDateTime localDateTime = LocalDateTime.ofInstant(Instant.ofEpochSecond(l), ZoneId.systemDefault());
+System.out.println(localDateTime);
+
+localDateTime = LocalDateTime.ofEpochSecond(l, 0, ZoneOffset.ofHours(8));
+System.out.println(localDateTime);
+----
+
+
+
+==== 时间与字符串之间的转换(时间格式化)
+
+----
+LocalDateTime now = LocalDateTime.now();
+Instant instant = now.atZone(ZoneId.systemDefault()).toInstant();
+System.out.println(instant.toEpochMilli());
+
+long l = LocalDateTime.now().toEpochSecond(ZoneOffset.ofHours(8));
+System.out.println(l);
+
+LocalDateTime localDateTime = LocalDateTime
+  .ofInstant(Instant.ofEpochMilli(l), ZoneId.systemDefault());
+System.out.println(localDateTime);
+
+localDateTime = LocalDateTime.ofEpochSecond(l, 0, ZoneOffset.ofHours(8));
+System.out.println(localDateTime);
+----
+
+----
+// 另一种方式使用会报错：
+Instant now = Instant.now();
+String format = DateTimeFormatter.ofPattern("yyyy:MM:dd HH:mm:ss").format(now);
+system.out.println(format);
+// 可以通过以下方式进行格式化
+DateTimeFormatter formatter =
+        DateTimeFormatter
+            .ofLocalizedDateTime(FormatStyle.SHORT)
+            .withLocale(Locale.UK)
+            .withZone(ZoneId.systemDefault());
+String output = formatter.format(Instant.now());
+System.out.println(output);
+----
+
+
+
+=== java.util.Date、java.util.Calendar 与 joda-time、java.time之间的转换
+
+java.util.Date 是 Java 中最早的日期类，后来就不推荐使用这个类了，java.util.Calendar 用来替代 Date。Calendar 有 Date 的所有功能，并且提供了更加丰富的获取年月日的 API。
+Calendar 是一个虚拟类，GregorianCalendar 则是 Calendar 的实现类。
+java.time 与 java.util 下的时间类相互转化，可以将 Date 或者 Calendar 转化成 Java time 中的 LocalDateTime.
+
+java.util.Date 转 java.time.LocalDateTime:
+
+----
+Date date = new Date();
+LocalDateTime localDateTime = LocalDateTime.ofInstant(date.toInstant(), ZoneId.systemDefault());
+----
+
+java.util.Carlendar 转 java.time.LocalDateTime:
+
+----
+Calendar calendar = Calendar.getInstance();
+LocalDateTime localDateTime = LocalDateTime.ofInstant(calendar.toInstant(), ZoneId.systemDefault());
+----
+
+
+
+joda-time 也可以与 java.util.Date 可以进行相互的转化：
+
+----
+// from Joda to JDK
+DateTime dt = new DateTime();
+Date jdkDate = dt.toDate();
+// from JDK to Joda
+dt = new DateTime(jdkDate);
+
+// from Joda to JDK
+DateTime dt = new DateTime();
+Calendar jdkCal = dt.toCalendar(Locale.CHINESE);
+// from JDK to Joda
+dt = new DateTime(jdkCal);
+
+// from Joda to JDK
+DateTime dt = new DateTime();
+GregorianCalendar jdkGCal = dt.toGregorianCalendar();
+// from JDK to Joda
+dt = new DateTime(jdkGCal);
+----
+
+在java.util.Date、java.util.Calender类与LocalDate、LocalDateTime类之间转换中 均可以通过Instant作为中间类完成转换，Instant的使用还是比较方便的，下面介绍Instant的使用。
+instant 相当于 date
+
+----
+Instant instant = Instant.now();
+System.out.println(instant);
+Date date = new Date();
+System.out.println(date);
+----
+
+Instant转Date 类方法（java.util.Date）
+
+----
+Date from = Date.from(instant);
+System.out.println(date);
+----
+
+DateTime转Instant 对象方法（java.util.Date）
+
+----
+Instant instant1 = date.toInstant();
+System.out.println(instant1);
+----
+
+
+
+=== 时间和数据库的一种关系
+
+java.sql包下有三个比较特殊的java.util.Date的子类Date、Time、Timestamp，这三个类使用场景比较存粹，只有在使用JDBC与数据库进行交互的时候，使用PrepareStatement.setDate()的时候才会使用。
+
+- java.sql.Date 只有年月日    对应  MySQL中的YEAR和DATE类型
+- java.sql.Time 只有时分秒    对应  MySQL中的TIME类型
+- java.sql.Timestamp 时间戳  对应  MySQL中的DATETIME和TIEMSTAMP类型
+
+=== java.time的设计思想
+
+Joda time 与 Java time 在功能上已经相差不大，常用的功能这两个类库都可以完成，而且两个库都是线程安全的。
+但我认为 Joda time 的 API 更加简洁一些，Joda time 的使用可以直接从 DateTime 这个类开始。而 Java time 的使用则更加繁琐。
+从设计上来说 Java time 都不再使用 new 来创建实例，而是使用工厂方法来创建实例。这点上比 Joda time 的设计要更好，而且更加安全。
+既然 Joda time 都推荐迁移回 Java time 了，那么最终肯定是要迁移的。但是目前来说，我觉得 Joda time 用起来更加顺手一些，暂时还会继续使用这个。
+
+java时间的终极奥义
+
+System.currentTimeMillis();

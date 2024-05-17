@@ -1,0 +1,1330 @@
+= Java技术体系化学习笔记
+于海洋 <yu_haiyang@foxmail.com>
+v1.0, 2020-10-30
+:doctype: book
+
+= 【Gradle3.0工具使用入门到精通】
+
+Java作为一门世界级主流编程语言，有一款高效易用的项目管理工具是Java开发者共同追求的心愿和目标。先是2000年Ant，后有2004那年Maven两个工具的诞生，都在Java市场上取得了巨大的成功。但是二者都有一定的不足和局限性。
+2012年基于Ant和Maven产生的Gradle，弥补了Ant和Maven的不足，带来了一些更高效的特点。它使用一种基于Groovy的特定领域语言(DSL)来声明项目设置，抛弃了基于XML的各种繁琐配置。面向Java引用为主。当前其支持的语言限于Java、Groovy和Scala，计划未来将支持更多的语言。
+
+- 一款最新的，功能最强大的构建工具，用它逼格更高
+- 使用程序代替传统的xml配置，项目构建更灵活。
+- 丰富的第三方插件
+- 完善Android、java开发技术体系
+- 提升自动化构建技术深度
+- 进阶为高级工程师
+
+= 【文档介绍】
+
+本文档主要分以下几个步骤来说明Gradle工具的使用:
+
+1. Gradle安装配置(Windows版)
+2. Gradle和idea集成
+3. Groovy语言简单介绍
+4. Gradle仓库的配置
+5. Gradle入门案例
+6. Gradle创建Java web工程并在tomcat下运行
+7. Gradle构建多模块项目
+
+= Gradle安装配置
+
+- 下载、解压、配置环境变量
+- GRADLE_HOME
+- Path %GRADLE_HOME%\bin
+
+= Gradle和idea集成
+
+直接使用即可，不需要任何配置
+
+Gradle工程的目录结构和Maven的目录结构完全相同
+
+    src/main/java  放置正式代码目录
+    src/main/resource  放置正式配置文件目录
+    src/test/java  放置单元测试代码目录
+    src/test/resource  放置测试配置文件目录
+    src/main/webapp 放置页面元素， 例如：js css img html等等
+
+= Groovy语言简单介绍
+
+[source groovy]
+----
+    //介绍groovy编程语言
+    //println("Hello Groovy");
+    //groovy中可以省略语句最末尾的分号
+    //println("Hello Groovy")
+    //groovy可以省略括号
+    println "Hello Groovy"
+
+    //groovy中如何定义变量
+    //def是弱类型的，groovy会自动根据情况来给变量赋予对应的类型
+    def i = 18
+    println i
+
+    def s = "Bruce"
+    println s
+
+    //定义一个集合类型
+    def list = ['a', 'b', 'c', 'd']
+    //往list中添加元素
+    list << 'e'
+    //去除list中第五个元素
+    println list.get(4)
+
+    //定义一个map
+    def map = ['key1':'value1', 'key2':'value2']
+    //向map中添加键值对
+    map.key3 = 'value3'
+    //打印出key3的值
+    println map.get("key3")
+
+    //groovy中的闭包
+    //什么是闭包？闭包其实就是一段代码块。在gradle中，我们只要是把闭包当参数使用
+    //定义一个闭包
+    def b1 = {
+        println "helle b1"
+    }
+
+    //定义一个方法，方法中需要一个闭包类型的参数
+    def method1(Closure closure){
+        closure()
+    }
+    //调用方法method1
+    method1(b1)
+    //定义一个闭包，带参数
+
+    def b2 = {
+        v ->
+            println "hello ${v}"
+    }
+
+    def method2(Closure closure){
+        closure("Bruce")
+    }
+
+    method2(b2)
+
+
+    int x = 10
+    println(x.class)
+    double y = 3.24
+    println(y.class)
+
+    def z = 3.14
+    println(z.class)
+    b = 4
+    println(b.class)
+    d = 3.14
+    println(d.class)
+
+
+    // ============常用定义字符串的方式==============
+    def name = "Bruce"
+    println(name.class)
+
+    // 无格式字符串
+    def name_1 = 'a single \'a\' string'
+    println(name_1)
+    println(name_1.class)
+
+    // 有格式字符串
+    def thupleName = '''three
+            signle
+    string'''
+    println(thupleName)
+    println(thupleName.class)
+
+
+    // 双引号可扩展字符串
+    def doubleName = "double string"
+    println(doubleName)
+    println(doubleName.class)
+
+    def sayHello = "HellO: ${name}"
+    println(sayHello)
+    println(sayHello.class)
+
+    // 可扩展做任意的表达式
+    def sum = "The sum of 2 and 3 equals ${2 + 3}"
+    println(sum)
+
+    // 不加\第一行会是空行
+    def doubleName_2 = """\
+    you are
+    the best"""
+    println(doubleName_2)
+    println(doubleName_2.class)
+
+    String echo(String message){
+        return message
+    }
+
+    // String 和 GString 可以互转
+    def result = echo(sum)
+    println(result)
+
+    def res = "${echo(sum)}"
+    println(res)
+
+
+    // ============== 字符串的方法==============
+    def str = "groovy Hello"
+    // 第二个参数不填写默认是空格
+    println(str.center(8, 'a'))
+    println(str.padLeft(8, 'a')) // padRight同理
+
+    def str2 = 'Hello'
+
+    // 字符串ASCII码比较
+    println(str.compareTo(str2))
+    println(str > str2)
+
+    // 获取索引位置的值
+    println(str.getAt(0))
+    println(str[0])
+    println(str[-1])
+    // 0到3
+    println(str[0..3])
+
+    println(str.minus(str2))
+    println(str - str2)
+
+    // 字符串翻转
+    println(str.reverse())
+
+    // 首字母大写
+    println(str.capitalize())
+
+    // 是否是数字类型
+    println(str.isNumber())
+
+    // str.toInteger()
+
+
+    /* ================条件判断和循环============== */
+    def s = 1.23
+    switch (s){
+        case "foo":
+            result = 'found foo'
+            break
+        case 'bar':
+            result = 'bar'
+            break
+        case [1.23, 4, 5, 6, 'inlist']:
+            result = 'list' // 列表
+            break
+        case 12..30:
+            result = 'range' // 范围
+            break
+        case Integer:
+            result = 'integer'
+            break
+        case BigDecimal:
+            result = 'big decimal'
+            break
+        default:
+            result = 'default'
+    }
+    println(result)
+
+    sum = 0
+    for (i in 0..9){
+        sum += i
+    }
+    println(sum)
+
+    sum = 0
+
+    // 对list的循环
+    for (i in [1,2,3,4,5,6,7,8,9]){
+        sum += i
+    }
+    println(sum)
+
+    // 对map的循环
+    for (i in ['lily':1, 'luck':2, 'xm':3]){
+        println(i.key)
+        sum += i.value
+    }
+    println(sum)
+
+
+
+    /* =======================闭包================== */
+    // Groovy中闭包基础
+    // 闭包定义：闭包就是一段代码块，使用同方法
+    def clouser = {
+        println("Hello Groovy")
+    }
+    // 调用
+    //clouser.call()
+    // 另一种调用方式
+    clouser()
+
+    // 有参数的闭包
+    def func = { String name_, int age -> println("Hello ${name_}, My Age is ${age}")}
+    func("Bruce", 18)
+
+    // 所有的闭包都有一个it默认参数,当我们指定参数时，这个默认参数就没有了
+    def default_ = { println("Hello ${it}")}
+    default_("Bruce")
+
+    // 闭包的返回值
+    def return_ = { String name_ ->
+        return "Hello ${name_}"
+    }
+    println(return_("Bruce_"))
+    // 即使不写return，闭包也会返回一个null值，
+    // 只有一个参数调用时，不写参数，也不会报错，默认参数是null
+
+    // Groovy中闭包的使用
+    // 与基本类型的结合使用
+
+    int m = 5
+
+    // 求指定number的阶乘
+    int fab(int number) {
+        int result = 1
+        1.upto(number, {num -> result *= num})
+        return result
+    }
+
+    println(fab(m))
+    int fab2(int number) {
+        int result = 1
+    //    number.downto(1, {num -> result *= num })
+        number.downto(1){ num -> result *= num } // 闭包写在括号内或者括号外都是可以的
+        return result
+    }
+    println(fab2(m))
+
+    int cal(int number) {
+        int result
+        number.times {num -> result += num}
+        return result
+    }
+    println(cal(101))
+    // 与String结合使用
+
+    String str_ = "the 2 and 3 is 5"
+    // each的遍历, 返回值还是调用者本身
+    str_.each {
+        String temp -> print(temp.multiply(2))
+    }
+    println()
+    // find查找复合条件的第一个, 闭包的返回值必须是boolean类型
+    println(str_.find {
+        String s_ -> s_.isNumber()
+    })
+
+    def list = str_.findAll{ String s_ -> s_.isNumber()}
+    println(list.toListString())
+
+    // 只要包含数字就返回True
+    def res_ = str_.any { String s_ -> s_.isNumber()}
+    println(res_)
+    println(str_.every{ String s_ -> s_.isNumber()})
+
+    // 将调用者的每一个元素执行闭包操作
+    def list_ = str.collect { it.toUpperCase()}
+    println(list_.toListString())
+
+    // 与数据结构结合使用
+
+
+
+    // 与文件等结合使用
+
+
+
+    // Groovy中闭包的进阶
+    /**闭包的三个重要变量：this、owner、delegate*/
+    def scriptClouser = {
+        println("scriptClouser this:" + this) // 代表闭包定义处的类
+        println("scriptClouser owner:" + owner) //代表闭包定义处的类或者对象
+        println("scriptClouser delegate:" + delegate) // 代表任意对象，默认与owner一致
+    }
+
+    scriptClouser.call()
+
+    // 定义了一个内部类
+    class Person {
+        def static classClouser = {
+            println("classClouser this:" + this)
+            println("classClouser owner:" + owner)
+            println("classClouser delegate:" + delegate)
+        }
+
+        def static say() {
+            def classClouser = {
+                println("methodClassClouser this:" + this)
+                println("methodClassClouser owner:" + owner)
+                println("methodClassClouser delegate:" + delegate)
+            }
+            classClouser.call()
+        }
+
+        def classClouser_ = {
+            println("classClouser this:" + this)
+            println("classClouser owner:" + owner)
+            println("classClouser delegate:" + delegate)
+        }
+
+        def say_() {
+            def classClouser = {
+                println("methodClassClouser this:" + this)
+                println("methodClassClouser owner:" + owner)
+                println("methodClassClouser delegate:" + delegate)
+            }
+            classClouser.call()
+        }
+    }
+
+    Person.classClouser.call()
+    Person.say()
+
+    Person p = new Person()
+    p.classClouser_.call()
+    p.say_()
+
+
+    // 闭包中定义一个闭包
+    def nestClouser = {
+
+        def innerClouser = {
+            println("methodClassClouser this:" + this)
+            println("methodClassClouser owner:" + owner)
+            println("methodClassClouser delegate:" + delegate)
+        }
+        innerClouser.delegate = p // 修改默认的delegate
+        innerClouser.call()
+    }
+    nestClouser.call()
+    /**
+     * 1. 大多数情况下this\owner\delegate的值是一样的
+     * 2. 在闭包中定义闭包 this与owner、delegate的值不一样
+     * 3. 人为修改delegate值后 delegate的值与owner不同
+     */
+
+    // 闭包的委托策略
+    class Student {
+        String name
+        def pretty = {"My Name is ${name}"}
+        String toString() {
+            pretty.call()
+        }
+    }
+
+    class Teacher {
+        String name
+    }
+
+    def stu = new Student(name: 'Bruce')
+    def tea = new Teacher(name: 'Jack')
+    println(stu.toString())
+    stu.pretty.delegate = tea
+    stu.pretty.resolveStrategy = Closure.DELEGATE_FIRST
+    println(stu.toString())
+
+    /**数据结构*/
+    // groovy中的list列表
+    // def list = new ArrayList() // Java 的定义方式
+    def list = [1, 2, 3, 4, 5]  // groovy中定义的list
+    println(list.class)
+    println(list.size())
+    def array = [1, 2, 3, 4, 5] as int[]
+    println(array.class)
+    int[] array2 = [1, 2, 3, 4, 5]
+    println(array2.class)
+    // Groovy 中的数组和list的操作都是一样的
+    /** 列表的排序*/
+    def sortedList = [5, -3, 2, 8, 4, -9]
+    // 根据绝对值大小进行排序
+    Comparator mc = { a, b -> a == b ? 0 : Math.abs(a) < Math.abs(b) ? -1 : 1 }
+    // Java中的排序
+    // Collections.sort(sortedList, mc)
+    // Groovy中的排序
+    //sortedList.sort(mc)
+    // 使用闭包传递参数
+    sortedList.sort { a, b -> a == b ? 0 : Math.abs(a) < Math.abs(b) ? -1 : 1 }
+    println(sortedList)
+
+    // 字符串列表
+    def sortStringList = ['abc', 'z', 'Hello', 'groovy', 'java']
+    sortStringList.sort { it -> return it.size() }
+    println(sortStringList)
+
+    /**列表的查找*/
+    def findList = [5, -3, 2, 8, 4, -9]
+    int result = findList.find { return it % 2 == 0 }
+    println(result)
+
+    def resultList = findList.findAll { return it % 2 != 0 }
+    println(resultList.toListString())
+
+    println(findList.any { return it % 2 != 0 })
+    println(findList.every { return it % 2 != 0 })
+
+    println(findList.min())
+    println(findList.max())
+
+    println(findList.min { return Math.abs(it) })
+    println(findList.max { return Math.abs(it) })
+
+    print(findList.count { return it % 2 == 0 })
+
+    /** list的添加元素 */
+    list.add(6)
+    list.leftShift(7)
+    list << 8
+    println(list.toListString())
+    def plusList = list + 9
+    println(plusList.toListString())
+
+    /** list的删除操作 */
+    //list.remove(7)
+    //list.remove((Object)7)
+    //list.removeAt(7)
+    //list.removeElement(6)
+    list.removeAll{return it % 2 == 0}
+    println(list - [6, 7])
+
+    /**map*/
+
+    //def map = new HashMap()
+
+    def colors = [red: 'ff0000', green: '00ff00', blue: '0000ff']
+    println(colors.getClass())
+
+    println(colors.get('red'))
+    println(colors.getAt('red'))
+    println(colors['red'])
+    println(colors.red)
+
+    // 添加元素
+    colors.yellow = 'ffff00'
+    println(colors.toMapString())
+
+    colors.leftShift(orange: 'ff00ff')
+    colors.complex = [a: 1, b: 2]
+    println(colors.toMapString())
+
+    /**Map操作*/
+    def students = [
+            1: [number: '0001', name: 'Bob', score: 55, sex: 'male'],
+            2: [number: '0002', name: 'Johnny', score: 62, sex: 'female'],
+            3: [number: '0003', name: 'Bruce', score: 73, sex: 'female'],
+            4: [number: '0004', name: 'Amy', score: 66, sex: 'male'],
+    ]
+
+    //遍历
+    students.each { def student ->
+        println(" this key is ${student.key}, the value is ${student.value}")
+    }
+
+    // 带索引的遍历
+    students.eachWithIndex { def student, int index ->
+        println(" index is ${index}, this key is ${student.key}, the value is ${student.value}")
+    }
+
+
+    students.each { key, value ->
+        println(" this key is ${key}, the value is ${value}")
+    }
+
+    // 直接遍历key-value
+    students.eachWithIndex { key, value, index ->
+        println(" index is ${index}, this key is ${key}, the value is ${value}")
+    }
+
+    // Map的查找
+    def entry = students.find { def student ->
+        return student.value.score >= 60
+    }
+    println(entry)
+
+    def entrys = students.findAll { def student ->
+        return student.value['score'] >= 60
+    }
+    println(entrys)
+
+    def count = students.count { def student ->
+        return student.value['score'] >= 60 && student.value.sex == 'male'
+    }
+    println(count)
+
+
+    def names = students.findAll { def student ->
+        student.value['score'] >= 60
+    }.collect { return it.value['name'] }
+    println(names.toListString())
+
+    /**分组*/
+    def group = students.groupBy { def student ->
+        return student.value['score'] >= 60 ? '及格' : '不及格'
+    }
+    println(group.toMapString())
+
+    /**排序*/
+    def sort = students.sort { def student1, def student2 ->
+        Number score1 = student1.value['score']
+        Number score2 = student2.value['score']
+        return score1 == score2 ? 0 : score1 < score2 ? -1 : 1
+    }
+    println(sort.toMapString())
+
+    /**范围*/
+
+    def range = 1..10
+
+    println(range.class)
+    println(range[0])
+    println(range.contains(10))
+    println(range.from)
+    println(range.to)
+
+
+    /**Range 是list的子类，所有的操作都一样*/
+
+    /*遍历*/
+    range.each {
+        println(it)
+    }
+
+    for (i in range) {
+        println(i)
+    }
+
+    def getGrade(Number number) {
+        def result
+        switch (number) {
+            case 0..<60:
+                result = '不及格'
+                break
+            case 60..<70:
+                result = '及格'
+                break
+            case 70..<80:
+                result = '良好'
+                break
+            case 80..100:
+                result = '优秀'
+                break
+        }
+    }
+    def result = getGrade(75)
+    println(result)
+----
+
+== 领域特定语言DSL
+
+=== DSL介绍
+
+- 全称domain specific language
+- 有哪些常见的DSL语言及特点
+Matlab/UML/HTML都是DSL的分支
+特点：解决特定领域专有的问题【小而精】(系统编程语言解决的是所有的问题【大而全】)
+- DSL与通用编程语言的区别
+- 核心思想
+求专不求全，解决特定问题
+
+== Groovy初探
+
+=== Groovy介绍
+
+- 是一种基于JVM敏捷开发语言
+- 结合了Python、Ruby和Smalltalk的许多强大的特性
+- groovy可以与Java完美结合，而且可以使用Java所有的库
+
+=== Groovy特性
+
+- 语法上支持动态类型，闭包等新一代语言特性
+- 无缝集成所有已经存在的Java类库
+- 既支持面向对象编程也支持面向过程编程
+
+=== Groovy优势
+
+- 一种更加敏捷的编程语言
+- 入门非常的容易，但功能非常的强大
+- 既可以作为编程语言也可以作为脚本语言
+- 熟练掌握Java会非常容易掌握Groovy
+
+=== Groovy环境搭建
+
+==== mac/linux环境下，groovy开发环境搭建
+
+- 安装好JDK环境
+- 到官网下载好groovySDK，解压到合适的位置
+- 配置环境变量
+
+==== Windows
+
+==== Intellij IDEA 开发工具安装及Groovy环境配置
+
+
+= Gradle基本概念
+
+- Gradle主要是用来构建应用程序的
+- Gradle不仅仅是一种构建工具，更是一种编程框架
+
+== Gradle优势
+
+- 灵活性上：可以自行扩展功能
+- 粒度性上：通过一些列的Task将源代码资源等生成apk
+- 扩展性上：支持插件机制，可以复用已有的插件
+- 兼容性上：兼容maven ant等工具
+
+== Gradle执行流程
+
+- initiallzation初始化阶段：解析整个工程中所有Project， 构建所有的Project对应的Project对象
+- Configuration配置阶段：解析所有的project对象中的task，构建好所有的task拓扑图(有向无环图)
+- Execution执行阶段：执行具体的task机器依赖task
+
+// 生命周期监听
+this.beforeEvaluate {} // init之后Config之前
+this.afterEvaluate {} //config之后 exec之前
+this.gradle.buildFinished {} // exec之后
+
+this.gradle.beforeProject {}  // 等同于beforeEvaluate
+this.gradle.afterProject {}  // 等同于afterEvaluate
+this.gradle.buildFinished {} // exec之后
+
+this.gradle.addListener()
+
+
+== Gradle生命周期
+
+以上的三个阶段
+
+== Project 类
+
+=== Project API
+
+this.getAllprojects()
+def getProjects() {
+println "-------------------"
+println "Root Project"
+println "-------------------"
+this.getAllprojects().eachWithIndex {Project project, int index ->
+if(index == 0){
+println("Root project':${project.name}'")
+} else {
+println("+--- project':${project.name}'")
+}
+}
+}
+this.getProjects()
+
+this.getSubprojects()
+this.getParent()
+this.getRootProject()
+
+project('app') { // 子工程的相关设置
+}  // 在父工程中做这样的配置，子工程可以删除build.gradle配置
+
+// 配置当前节点工程和其他subproject的所有project
+allprojects {
+group 'con.yuhaiyang'
+version '1.0.0-release'
+}
+// 不包括当前节点工程，只包括它的subproject
+subprojects {Project project ->
+if(project.plugins.hasPlugin('com.android.library)){
+apply from: '../publishToMaven.gradle'
+}
+}
+
+=== 属性API,
+
+// 定义扩展属性
+ext {
+compileSdkVersion = 25
+}
+android {
+compileSdkVersion this.compileSdkVersion
+}
+
+// 为所有的子工程扩展属性，但是这种定义方式，还是为每一个子工程定义一遍
+// 只不过是gradle自己在内存中定义的
+subprojects {
+ext {
+compileSdkVersion = 25
+}
+}
+
+// 为了改进以上的缺陷，我们还是把扩展属性定义到根工程中，
+ext {
+compileSdkVersion = 25
+}
+// 子工程可以使用getRootProject的方式获取属性
+this.rootProject.compileSdkVersion
+或者 this.compileSdkVersion // 因为子Project和父Project是继承关系
+
+// 但以上还不是最佳，我们可以将扩展单独定义到一个.gradle文件中，在父工程中引入即可
+apply from: this.file('common.gradle)
+
+// 扩展属性的另一种定义方式
+// 在gradle.properties中定义, 但是在该文件中只能是key-value形式的
+isLoadTest=false
+
+// settings.gradle
+if(hasProperty('isLoaderTest') ? isLoadTest.toBoolean(): false){
+include 'Test
+'
+}
+
+=== 文件相关API
+
+- 路径获取相关API
+
+```groovy
+// build.gradle
+println(getRootDir().absolutePath)
+println(getBuildDir().absolutePath)
+println(getProjectDir().absolutePath)
+```
+
+- 文件操作相关API
+// 只支持在根工程中操作，无法拷贝到文件系统中
+文件定位
+
+```groovy
+//build.gradle
+def getContent(String path) {
+    try{
+        // 相对于当前的project工程查找
+        def file = this.file(path)
+//        def file = this.files(path)
+        return file.text
+    }catch (GradleException e){
+        println('file not found')
+    }
+    return null
+}
+println(getContent('common.gradle'))
+
+```
+
+文件拷贝
+
+```groovy
+// app.gradle
+copy {
+    from file('youdo.jks')
+    into getRootProject().getBuildDir()
+    exclude {} // 排除不拷贝的文件
+    rename {} // 重命名文件
+}
+// 在实际开发中拷贝jar war apk 等工程文件
+// 该方法不仅可以拷贝文件，还可以拷贝文件夹
+
+```
+
+文件树遍历
+
+```groovy
+//app.gradle
+fileTree('build/outputs/apk/') {FileTree fileTree ->
+    fileTree.visit {FileTreeElement element ->
+        println('the file name is: ' + element.file.name)
+        copy {
+            from element.file
+            into getRootProject().getBuildDir().path + '/test/'
+        }
+    }
+}
+```
+
+=== 其他API
+
+- 依赖相关API
+
+```groovy
+// build.gradle
+// buildscript方法接收一个闭包，依赖配置的核心部分
+buildscript {ScriptHandler scriptHandler ->
+//    scriptHandler.repositories {}
+    // 配置我们工程的仓库地址
+    repositories {RepositoryHandler repositoryHandler ->
+        repositoryHandler.jcenter() // android常用的仓库
+        repositoryHandler.mavenCenter()
+        repositoryHandler.mavenLocal()
+        repositoryHandler.ivy {} // ant用的多的仓库，现在基本已经弃用了
+        repositoryHandler.maven {
+            name 'personal'
+            url 'http://lcoalhost:8081/nexus/repositories/'
+            credentials {
+                username = 'admin'
+                password = 'admin123'
+            }
+        }
+    }
+    // 配置我们工程的'插件'依赖地址，这里是gradle使用的插件，
+    // build.gradle跟工程中的dependencies中配置的是应用程序依赖的文件jar包
+    dependencies {
+        classpath 'com.android.tools.build:gradle:2.2.2'
+        classpath 'com.tencent.tinker-patch-gradle-plugin:1.7.7' //腾讯热修复插件
+    }
+}
+
+// 为应用程序添加第三方库依赖
+dependencies {
+
+}
+```
+
+- 外部命令执行
+
+```groovy
+// build.grdle
+task('apkcopy') {
+    doLast{
+        // gradle执行阶段去执行
+        def sourcePath = thos.buildDir.path + '/output/apk'
+        def desationPath = 'Downloads/'
+        def command = 'mv -f ${sourcePath} ${desationPath}'
+        exec {
+            try {
+                executable 'bash'
+                args '-c', command
+                println ('the command is execute success.')
+            }catch(GradleException e) {
+                println ('the command is execute failed')
+            }
+        }
+    }
+}
+
+```
+
+== Task 详解
+
+=== Task定义及配置
+
+```groovy
+// app/build.gradle
+
+// 定义一个task
+// 直接通过task函数去创建
+task helloTask {
+    println('I am helloTask.')
+} // 等价于 task('helloTask', {println('===')})
+// gradle helloTask
+
+// 通过TaskContainer去创建Task
+this.tasks.create(name:'helloTask2') {
+    println('helloTask2')
+}
+
+//以上两种创建方式没有区别，最终都是放在TaskContainer中
+
+task helloTask3(group:'bruce', description:'task study') {
+    // 与参数中的配置相同
+    // setGroup('bruce')
+    // setDescription('task study')
+    println('helloTask3')
+}
+
+// 以上定义的task都是执行于配置阶段的
+
+```
+
+=== Task执行
+
+```groovy
+// 我们可以通过使用doFirst、doLast等方法将task声明在执行阶段
+task helloTask4(group:'bruce', description:'task study') {
+    println('helloTask3')
+    // doFirst或者是doLast都可以配置多个，执行顺序是按照代码顺序执行的
+    doFirst {
+        println('the task group is:' + group)
+    }
+    doFirst {
+    }
+}
+// 也可以在外面定义,外部定义的优先级高于内部定义
+helloTask4.doFirst {
+    println('the task group is:' + description)
+
+}
+
+// 计算build执行时长
+def startBuildTime, endBuildTime
+// 执行该监听时，task任务都已经被创建好了
+this.afterEvaluate {Project project ->
+    // 保证要找的task已经完毕
+    def preBuildTask = project.tasks.getByName('preBuild')
+    preBuildTask.doFirst {
+        startBuildTime = System.currentTimeMillis()
+        println 'thie start time is:' + startBuildTime
+    }
+
+    def buildTask = project.tasks.getByName('build')
+    buildTask.doLast {
+        endBuildTime = System.currentTimeMillis()
+        println "thie start time is: ${endBuildTime - startBuildTime}"
+
+    }
+}
+
+```
+
+=== Task依赖和执行顺序
+
+- dependsOn强依赖方式
+- 通过Task输入输出指定 (等效dependsOn)
+- 通过API指定执行顺序
+
+```groovy
+task taskX {
+    doLast {
+        println ('taskX')
+    }
+}
+task taskY {
+    doLast {
+        println ('taskY')
+    }
+}
+task taskZ(dependsOn:[taskX, taskY]) {
+    // 动态添加task依赖
+    dependsOn this.tasks.findAll{task ->
+        return task.name.startsWith('lib')
+    }
+    doLast {
+        println ('taskZ')
+    }
+}
+
+// gradle taskZ
+// 也可以使用以下方式
+taskZ.dependsOn(taskX, taskY)
+
+
+// << 等同于doLast
+task lib1 << {
+    println 'lib1'
+}
+task lib2 << {
+    println 'lib2'
+}
+task nolib << {
+    println 'nolib'
+}
+
+
+//
+task handleReleaseFile {
+    def srcFile = file('releases.xml')
+    def destDir = new File(this.buildDir, 'generated/release/')
+    doLast {
+        println('开始解析对应的xml文件')
+        destDir.mkdir()
+        def releases = new XmlParser().parse(srcFile)
+        releases.release.each {releaseNode ->
+            // 解析每个release节点的内容
+            def name = releaseNode.name.text()
+            def versionCode = releaseNode.versionCode.text()
+            def versionInfo = releaseNode.versionInfo.text()
+            // 创建文件并写入节点数据
+            def destFile = new File(destDir, "releases-${name}.txt")
+            destFile.withWriter {writer ->
+                writer.write("${name} -> ${versionCode} -> ${versionInfo}")
+            }
+        }
+    }
+}
+
+task handleReleaseFileTest(dependsOn: handleReleaseFile) {
+    def dir = fileTree(this.buildDir + 'generated/release/')
+    doLast {
+        dir.each {
+            println('the file name is:' + it)
+        }
+        println "输出完成..."
+    }
+}
+
+// Task输入输出
+ext {
+    versionName = '1.0.0'
+    versionCode = '100'
+    versionInfo = 'App第一个版本，上线了一些最基础核心的功能'
+    destFile = file('releases.xml')
+    if(destFile != null && !destFile.exists()) {
+        destFile.createNewFile()
+    }
+}
+
+class VersionMsg {
+    String versionCode
+    String versionName
+    String versionInfo
+}
+
+task writeTask {
+    // 为Task指定输入
+    inputs.property('versionCode', this.versionCode)
+    inputs.property('versionName', this.versionName)
+    inputs.property('versionInfo', versionInfo)
+//    inputs.properties(Map)
+    // 为Task指定输出
+    outputs.file destFile
+    doLast {
+        def data = inputs.getProperties()
+        File file = outputs.getFiles().getSingleFile()
+        // 将map转化为实体对象
+        def versionMsg = new VersionMsg(data)
+        // 将实体对象转化为xml格式数据
+        def sw = new StringWriter()
+        def xmlBuilder = new MarkupBuilder(sw)
+        if (file.text != null && file.text.size() <= 0) {
+            // 文件中没有内容
+            xmlBuilder.releases {
+                release {
+                    versionCode(versionMsg.versionCode)
+                    verisonName(versionMsg.versionName)
+                    versionInfo(verisonMsg.versionInfo)
+                }
+                file.withWriter { writer -> writer.append(sw.toString())}
+            }
+        } else {
+            //已有版本信息
+            xmlBuilder.release {
+                versionCode(versionMsg.versionCode)
+                verisonName(versionMsg.versionName)
+                versionInfo(verisonMsg.versionInfo)
+            }
+            // 将生成的xml数据插入到根节点之前
+            def lines = file.readLines()
+            def lengths = lines.size() - 1
+            file.withWriter { writer ->
+                lines.eachWithIndex {String line, int index ->
+                    if (index != lengths){
+                        writer.append(line + "\r\n")
+                    }else if (index == lengths){
+                        writer.append("\r\n" + sw.toString() + "\r\n")
+                        writer.append(lines.get(lengths))
+                    }
+                }
+            }
+        }
+    }
+}
+
+task readTask {
+    inputs.file destFile
+    doLast {
+        def file = inputs.files.singleFile
+        println file.text
+    }
+}
+
+task taskTest {
+    dependsOn readTask, writeTask
+    doLast {
+        println "输入输出任务结束"
+    }
+}
+
+// 执行顺序的指定
+task taskX {
+    doLast {
+        println ('taskX')
+    }
+}
+task taskY {
+    mustRunAfter taskX
+    // shouldRunAfter taskX // 几乎不用
+    doLast {
+        println ('taskY')
+    }
+}
+task taskZ() {
+    mustRunAfter taskY
+    doLast {
+        println ('taskZ')
+    }
+}
+
+```
+
+=== 挂接到构建生命周期
+
+```groovy
+file from:this.rootProject.file('releaseinfo.gradle')
+
+this.project.afterEvaluate {project ->
+    def buildTask = project.tasks.getByName("build")
+    if (buildTask == null) throw GradleException("the build task is not found")
+    buildTask.doLast {
+        writeTask.execute()
+    }
+}
+```
+
+== Gradle 其他模块
+
+=== Settings类
+
+```groovy
+
+```
+
+=== SourceSet类
+
+=== Plugin及自定义Plugin
+
+```groovy
+
+```
+
+=== Android插件对gradle的扩展
+
+=== 如何迁移到gradle
+
+= Gradle配置文件介绍
+
+```
+    plugins {
+        id 'java'
+    }
+
+    group 'yuhaiyang'
+    version '1.0-SNAPSHOT'
+
+    sourceCompatibility = 1.8
+
+    /*
+     * 指定所使用的仓库
+     * mavenCentral()表示使用中央仓库，此刻项目中所需要的jar包都会默认从中央仓库下载到本地
+     *
+     */
+    repositories {
+        mavenCentral()
+    }
+
+    /*
+    * gradle工程所有的jar包的坐标都在dependencies属性内放置
+    * 每一个jar包的坐标都有三个基本元素
+    * group, name, version
+    * testCompile 表示该jar包在测试的手起作用，该属性为jar包的作用于
+    * 我们在gradle里面添加坐标的时候都要带上jar包的作用域
+    */
+    dependencies {
+        testCompile group: 'junit', name: 'junit', version: '4.12'
+        compile group: 'org.springframework', name: 'spring-context', version: '5.1.1.RELEASE'
+    }
+```
+
+= Gradle仓库的配置
+
+jar包的本地仓库的位置默认是系统用户目录下的.gradle下，目录层级很深，
+所以使用我们本地的maven仓库开发gradle项目是很有必要的。
+
+1. 我们在环境变量中添加
+GRALDE_USER_HOME    本地maven仓库路径 D:\.m2\repository
+2. 在build.gradle文件中修改
+
+```
+repositories {
+        mavenLocal() /*以上配置表示先从本地maven仓库找依赖，如果没有，再从中央仓库下载。*/
+        mavenCentral() /*如果只配置中央仓库，表示直接从中央仓库下载jar包。但是如果指定下载的位置，已经有了，就不会再下载了*/
+    }
+```
+
+= Gradle入门案例
+
+如maven的开发形式是一模一样的
+
+= Gradle创建Java web工程并在tomcat下运行
+
+与平时的开发使用jetty是相同的
+
+= Gradle构建多模块项目
+
+
+
+=============================
+
+
+= Gradle相关介绍及开发环境搭建
+
+== Gradle相关概念介绍
+
+== Windows/Linux/Mac下开发环境的搭建及工程创建
+
+= Gradle核心语法讲解及实战
+
+== 字符串特殊用法
+
+== Gradle常见数据结构(list/map/range)使用
+
+== Gradle面向对象特性
+
+= Gradle高级用法实战*
+
+== json文件处理及json，model互转
+
+== xml文件读取和生成
+
+== 普通文件的读写
+
+== 网络请求json并转化为实体对象实现
+
+== 文件下载功能实现
+
+= Gradle核心值Project详解及实战
+
+== Project类核心作用
+
+== 核心API讲解
+
+== Gradle生命周期流程
+
+== 版本统一管理脚本编写
+
+== Project类源码解读
+
+= Gradle核心之task详解及实战
+
+== Task定义和使用，Task执行流程
+
+== Task依赖关系与输入输出，Task集成与实现
+
+== Task修改默认构件流程，Task源码阅读
+
+== 综合实战1：自动化生成版本说明xml文档
+
+== 综合实战2：自动化时间工程插件更新功能
+
+= Gradle核心之其他某块详解及实战
+
+== 第三方库依赖管理及gradle如何去处理依赖原理
+
+== 工程初始化核心类Setting类作用及自定义
+
+== 源码管理类SourceSet讲解及实际工作中的妙用
+
+== 相关类的源码解读
+
+= Gradle核心之自定义plugin实战
+
+== 插件类Plugin的定义和如何使用第三方插件
+
+== Gradle如何管理插件的依赖
+
+== 插件类Plugin源码阅读
+
+== 综合实战：将前面实现的自动化脚本封装为插件供他人使用
+
+= Gradle程序修改默认打包流程
+
+== Android、Java工程打包流程
+
+== 将脚本嵌入到Gradle打包流程中实现我们的特定功能
+
+== 打包流程核心Task图解
+
+== 综合实战：将前面编写的脚本嵌入到打包流程中
+

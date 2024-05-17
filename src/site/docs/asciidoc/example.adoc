@@ -1,0 +1,138 @@
+文档中的一行或多行文本被定义为一个块元素。块元素可以嵌套在块元素中。
+
+文档可以包含以下块元素：
+
+* 头(Header)
+* 标题(Title)
+* 作者(Author Info)
+* 名字(First Name)
+* 中间名(Middle Name)
+* 姓氏(Last Name)
+* 邮箱(Email Address)
+* 修订信息(Revision Info)
+* 修订号(Revision Number)
+* 修订日期(Revision Date)
+* 修订描述(Revision Remark)
+* 属性(Attribute Entry)
+
+* 前言(Preamble)
+* 节标题(Section Title)
+* 节内容(Section Body)
+
+* 块ID(BlockId)
+* 块标题(Block Title)
+* 块宏(Block Macro)
+* 块(Block)
+
+* 段落(Paragraph)
+* 定界块(Delimited Block)
+* 表格(Table)
+* 列表(List)
+* 项目清单(Bulleted List)
+* 编号清单(Numbered List)
+* 说明清单(Description List)
+* 标注清单(Callout List)
+* 清单实体(List Entry)
+* 清单标签(List Label)
+* 清单项(List Item)
+* 项目内容(Item Text)
+* 列表段落(List Paragraph)
+* 列表续集(List Continuation)
+
+内联元素对block元素内的内容子集执行操作。
+内联元素包括：
+
+* 引用(Quotes)
+* 替换(Replacements)
+* 特殊字符(Special characters)
+* 特殊词(Special words)
+* 属性引用(Attribute references)
+* 行内宏(Inline macros)
+
+
+格式化标记(Formatting Marks)
+
+|===
+| 样式 | 约束型语法 | 非约束型语法
+
+| 加粗 | *abc*| **B**old
+| 倾斜 | _abc_| __B__old
+| 强调 | `abc`| ``B``old
+|===
+
+She spells her name with an "`h`", as in Sara**h**.
+
+"```endpoints```"
+"`endpoints`"
+
+"``endpoints``"
+
+``end``
+
+"[.code]``endpoints``" or \"``endpoints``"
+
+无限制引用逃逸
+不受限制的引号旨在匹配文本中的任何位置，不受上下文限制。 但是，这意味着您在不希望它们格式化时会捕获它们的格式。 诚然，在内容需要时，这些符号很难按字面值键入。 但是能够做到这一点只是了解本节将介绍的技巧。
+----
+The __kernel qualifier can be used with the __attribute__ keyword...
+
+#`CB###2`# and #`CB###3`#
+----
+以上标记会呈现以下样式
+
+The __kernel qualifier can be used with the __attribute__ keyword...
+
+#`CB###2`# and #`CB###3`#
+
+如果我们想要让上文内容按照原文的样式输出有两种（可靠的）解决方案可以逃避不受约束的格式标记：
+
+* 使用属性引用逐字插入无限制的格式标记 将不需要格式化的文本换行
+
+----
+:dbl_: __
+:3H: ###
+
+The {dbl_}kernel qualifier can be used with the {dbl_}attribute{dbl_} keyword...
+
+#`CB{3H}2`# and #`CB{3H}3`#
+----
+
+:dbl_: __
+:3H: ###
+
+The {dbl_}kernel qualifier can be used with the {dbl_}attribute{dbl_} keyword...
+
+#`CB{3H}2`# and #`CB{3H}3`#
+
+* 将不需要格式化的文本换行
+
+----
+The +__kernel+ qualifier can be used with the +__attribute__+ keyword...
+
+#`+CB###2+`# and #`+CB###3+`#
+----
+
+The +__kernel+ qualifier can be used with the +__attribute__+ keyword...
+
+#`+CB###2+`# and #`+CB###3+`#
+
+
+注意加号的添加。这是最接近文本格式转义的。加号符号之间的所有内容都从插值中转义（属性引用、文本格式等）。但是，文本仍然接收到正确的HTML输出转义（例如，<变为&lt；）。
+
+附件 \`+ TEXT +\`（用反引号括起来的加号内的文本）是Asciidoctor中的一种特殊格式组合。
+这意味着将TEXT设置为等宽格式，但不要在TEXT中插入格式标记或属性引用。 这大致相当于Markdown的反引号。
+由于AsciiDoc提供了更高级的格式，因此必须使用双外壳。
+
+内联直通方法的更暴力解决方案是使用``pass:c[pass:c[]]``宏，它是加号格式标记的更详细（且更灵活）的版本。
+
+----
+The pass:c[__kernel] qualifier can be used with the pass:c[__attribute__] keyword...
+
+#`pass:c[CB###2]`# and #`pass:c[CB###3]`#
+----
+
+The pass:c[__kernel] qualifier can be used with the pass:c[__attribute__] keyword...
+
+#`pass:c[CB###2]`# and #`pass:c[CB###3]`#
+
+如您所见，该宏并不十分优雅或简洁。 如果您想知道，pass:c[pass:c[]]宏的目标位置中的c会应用HTML的输出转义。 尽管并不总是必需的，但是最好包含此标志，这样您就不会忘记何时需要它。

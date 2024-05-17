@@ -1,0 +1,294 @@
+# <center>JAVA 编程语言的闲言碎语</center>
+
+
+
+## JAVA 历史
+
+### SUN公司的名字的由来
+
+SUN Microsystems由斯坦福大学的四个家伙于1982年创建。请不要认为SUN是太阳的意思，SUN 是"Stanford University Network"的首字母缩写 。
+
+1982年，Sun Microsystems公司诞生于美国斯坦福大学校园。Sun 公司1986 年上市，在NASDAQ的标识为SUNW。
+
+创立伊始，Sun的创立者就率先提出“网络就是计算机”的独特理念。这一理念指引着Sun各项业务的发展，为全球各个重要市场注入活力，
+驱使Sun成为向全球用户提供最具实力的网络计算系统、软件、服务和解决方案的领先供应商
+
+### Java的发展史和前景
+
+美国硅谷有一句行话，每10年～15年有一次轮回。最近的一次轮回就是从Java开始。
+
+Java是一种可以撰写跨平台应用软件的面向对象的程序设计语言，是由Sun Microsystems公司于1995年5月推出的
+Java程序设计语言和Java平台（即JavaSE, JavaEE, JavaME）的总称。Java 技术具有卓越的通用性、高效性、平台移植性和安全性，
+广泛应用于个人PC、数据中心、游戏控制台、科学超级计算机、移动电话和互联网，同时拥有全球最大的开发者专业社群。
+在全球云计算和移动互联网的产业环境下，Java更具备了显著优势和广阔前景。
+
+Sun 的Java语言开发小组成立于1991年，其目的是开拓消费类电子产品市场，例如，交互式电视、烤面包箱等。
+Sun内部人员把这个项目称为Green，那时WorldWideWeb还在图纸上呢。该小组的领导人是James Gosling，是一位非常杰出的程序员。
+
+为了使整个系统与平台无关，Gosling首先从改写C编译器着手。但是Gosling在改写过程中感到仅C是无法满足需要的，
+于是在1991年6月份开始准备开发一个新的语言，那么给它起一个什么名字呢？Gosling回首向窗外望去，看见一棵老橡树，
+于是建一个目录叫Oak，这就是Java语言的前身（后来发现Oak已是Sun公司另一个语言的注册商标，
+才改名为Java，即太平洋上一个盛产咖啡的岛屿的名字）。
+
+到了1994年，WWW已如火如荼地发展起来。Gosling意识到WWW需要一个中性的浏览器，它不依赖于任何硬件平台和软件平台，
+它应是一种实时性较高、可靠安全、有交互功能的浏览器。
+
+Java虽出现的时间不长，但已被业界接受，IBM、Apple、DEC、Adobe、SiliconGraphics、HP、Oracle、
+Toshiba、Netscap和Microsoft等大公司已经购买了Java的许可证。Microsoft还在其Web浏览器Explorer3.0 版中增加了对Java的支持。
+
+总而言之一句话：JAVA火了！
+
+### Java版本的进化和技术分支
+
+Java技术的主要分支方向分为三部分
+
+- JAVASE(JAVA Standard Edition): J2SE
+
+java标准版，提供基本的底层支持，图形界面等等。在2005年java十周年大会上，正式更名为JAVA SE。
+
+- JAVAME(JAVA　MICRO Edition)：J2ME
+
+Java简装版，主要是用于嵌入式系统的开发上，现在主要做的事游戏。在2005年java十周年大会上，正式更名为JAVA ME。
+
+- JAVAEE(Java Enterprise Edition): J2EE
+
+Java企业版, Java的一个主要方向， 主要适用于构建企业应用系统。在2005年java十周年大会上，正式更名为JAVA EE。
+
+**为什么都简称为J2SE、J2EE呢?**
+
+因为在1995年5月23日 SUN发布了Java1.0版本，到了1998年的时候，SUN公司正式将JAVA重新更名为Java2，
+主要是Java2中增加了一些列的轻量级的开发包，这些开发包主要都是在图形界面的开发上，这些图形界面统一称为JFC，
+但是已经过去了，现在很少有人使用Java进行图形界面开发了。
+
+
+### Java 语言的特点
+
+Java的最大特点就是面向对象，面向对象的概念最早是在70年代的时候由Smalltalk语言提出来的，Smalltalk是IBM开发出来的语言。
+
+Java语言属于变异性的语言，这意味着，所有的Java源程序代码，需要先编译，变异之后再在电脑上进行解释，所以Java的语言之星分为两步执行的。
+
+实际上Java的基础语法与C语言格式是完全一样的。
+
+在Java中不存在指针的概念，但是存在引用的概念，实际上传递的也是内存地址。
+
+Java的安全性是最高的。因为一切的操作都是以字节码(.class)文件的形式保存的。
+
+Java使用C++开发出来的，而且Java的最大特点就是跨平台。
+
+Java的所有程序都是在一台虚拟的电脑上进行执行的，此虚拟的电脑称为JVM
+
+Java技术具有卓越的通用性、高效性、平台移植性和安全性，广泛应用于个人PC、数据中心、游戏控制台、科学超级计算机、移动电话和互联网，
+同时拥有全球最大的开发者专业社区。在全球云计算和移动互联网的产业环境下，Java更具备了显著优势和广阔的前景
+
+
+**JVM（Java Virtual Machine） Java虚拟机**
+
+- 在一台计算机上由软件或硬件模拟的计算机，java虚拟机读取并处理经编译过的平台无关的字节码.class文件
+- Java编译器针对Java虚拟机产生.class文件，因此是独立于平台的。
+- Java编译器负责将Java虚拟机的代码在特定的平台上运行。
+- Source.java --编译--> Source.class --执行--> JVM(JVM for DOS、 JVM for Linux 、 JVM for OS X ...)
+
+
+## JAVA 开发环境的部署
+
+
+### JDK开发环境的部署
+
+1. JDK的作用
+
+JDK(Java Development Kit)是Sun Microsystems针对Java开发员的产品。JDK 是整个Java的核心，
+包括了Java运行环境，Java工具和Java基础的类库。JDK是学好Java的第一步。
+
+2. 安装JDK
+
+下载JDK安装程序，双击安装，将安装路径改为：C:\Program Files\Java\jdk1.5.0_17（其他路径也可以）。
+
+3. 设置环境变量
+
+各平台不同。
+
+4. 测试是否安装成功
+
+在运行中输入cmd，然后输入java –version，看看是否能显示出您所配置的java版本。
+
+5. 安装目录的说明
+
+- bin文件夹：存放JDK附带的使用工具。
+
+     javac.exe java编程语言编译器，就是用命令行指令javac来编译java源代码时用到的。
+
+     java.exe java应用程序启动器，就是再命令行上使用的java，用来执行java程序的。
+
+     appletviewer.exe java小应用程序查看器，用来检视java小应用程序（applet）工具。
+
+     javadoc.exe标准注释的提起工具，能提取程序中符合规定格式的以/** */注释的内容，并生成标准的API说明文档。这个工具提起生成的API说明文档与Sun公司提供给我们的Java标准类包的API Document形式上一致。
+
+     javaw.exe指使用窗口模式打开java程序的启动器。如果有一个具有图形界面的程序，并将它打成一个完整jar包，那么双击jar包图标就可以打开程序，不过需要把.jar文件关联可以使用javaw.exe打开。
+
+     native2ascii.exe一个可以将本地字符转化成为ASCII码的小工具。就是将世界上不同的文字转化成为以“\uXXXX”这样的形式出现的16进制Unicode码。
+
+- src.zip压缩包，存放java的源代码。查看想看的java源代码举例若程序中有一句这样的代码： import javax.swing.Icon;那么这个Icon类的源代码文件就在\javax \swing 文件夹中，可以找到一个名为“Icon.java”的Java源代码文件。这个就是Icon类的源代码文件。
+
+- jre文件夹：jre是jdk本身的运行环境，客户端只要运行环境就能运行编写的程序了。
+
+- lib文件夹：类库。
+注意：这里的bin、lib文件夹和jre里的bin、lib是不同的）总的来说JDK是用于java程序的开发,而jre则是只能运行class而没有编译的功能。
+
+- include文件夹：java和JVM交互用的头文件，
+
+
+### 集成开发环境(IDE)的选择
+
+- eclipse
+- Intellij IDEA
+- ...
+
+### **注意：JDK和JRE的区别**
+
+- JDK Java开发者环境，JDK中包含JRE
+- JRE Java程序的运行环境
+
+## JAVA 基本语法
+
+### Hello World 学习编程的开始程序
+
+首先要记住一句话：一个程序就是一个世界。
+
+程序和人是一样的，因为我们编程的目的就是，让程序来替我们人来做事，来对生产力的解放，并提高做事的效率。
+否则编程就没有意义。
+
+学习编程首先就是要慢下来，把一件事情分成一步一步的，因为在人类的思维中已经有了一些定式，我做某件事情的时候，
+在思维中其实是跳过了很多东西，因为那些东西在我们的大脑中都应经是明确的了。所以，这也是我们学习编程的一个首先要克服的问题，
+我们要把做一件事情的每一步的来龙去脉都要明明白白清清楚楚的。
+
+例如，我们从外面进到屋子内，我们正常的思维就是开门就进去了。而对于我们编程者而言，我们要想到，我们要进屋首先要有钥匙，
+我的钥匙放在了哪里，我怎么把钥匙取出来，钥匙怎样使用去开锁，我们开锁之后要怎么打开这扇门，需要拉还是推，如果是推，我们
+推什么位置，如果是拉，我们拉什么位置，用多大的力气，打开之后我怎么进去，我是走进去还是爬进去，进去之后我们要把门关上，等等的一些列动作。
+
+无论是人还是计算机，做事情都是要有个开头的，就像我们想要进屋，那么我们就要找到们，因为门是我们唯一的入口。
+程序也是一样，要想让它运行起来，那么就要有一个入口，而Java程序的入口就是一个main()函数，函数的概念在后面做介绍。
+
+接下来，我们来编写一个Java编程的入门案例，我们在系统的任意文件夹中创建一个HelloWorld.java的文件，在在文件中编写
+程序清单1中的代码，要保证class后面的名称和文件的名称保持一致，这个名称叫做类名。这就是我们编写的最简单的且最完整的
+一套java程序。这就是最基本的代码，无论你写任何程序，都离不开这几行代码。
+
+程序清单1：
+
+```java
+public class HelloWorld {
+    public static void main(String[] args){
+      System.out.println("Hello World");
+    }
+}
+```
+
+编写完成之后保存编写的内容，然后在该文件所在的目录中打开终端（DOS、PowerShell），输入javac 带后缀文件名(如：javac HelloWorld.java)
+执行完之后，会在当前目录中生成一个HelloWorld.class的文件，这个文件就是通过java编译后的二进制字节码文件。
+接下来我们执行java 字节码无后缀文件名(如：java HelloWorld),如果在终端看到你程序中输出的内容，表示你的程序编写正确。
+也就是你已经迈进了Java的大门。
+
+```bash
+PS C:\Users\admin\Desktop> javac HelloWorld.java
+PS C:\Users\admin\Desktop> java HelloWorld
+Hello World
+```
+
+**对HelloWorld.java的解释**
+
+1. 定义类（其中 public 是类的修饰符  class表示该java文件是个类 HelloWorld是类名）
+2. 定义区块(又称定义域)（用大括号{}表示类的范围和方法的范围）
+3. 定义main方法（这是java程序的入口）
+4. 在main方法中需要执行的语句(在main方法的定义区块内写main方法要执行的程序，或调用的方法)
+5. ()括号表示需要传递给方法的参数。
+
+
+
+### 静态导入(jdk1.5引入)
+
+import 语句可以导入一个类或某个包中的所有类
+
+import static 语句导入一个类中的某个静态方法或所有静态方法
+
+```java
+//import static java.lang.Math.max;
+import static java.lang.Math.*;
+public class App {
+    public static void main( String[] args ) {
+        System.out.println(max(4, 7));
+        System.out.println(Math.max(4, 7));
+    }
+}
+```
+
+### 可变参数
+
+问题：一个方法接受的参数个数不固定。
+
+可变参数的特点：
+
+* 只能出现参数列表的最后
+* ...位于变量类型和变量名之间，前后有无空格都可以
+* 调用可变参数的方法时，编译器为该可变参数隐含创建一个数组，在方法体中以数组的形式访问可变参数
+
+```java
+public class App {
+    public static void main( String[] args ) {
+        System.out.println(add(2,3, 5));
+    }
+
+    public static int add(int x, int... args){
+        int sum = x;
+        for (int arg : args) {
+            sum += arg;
+        }
+
+        return sum;
+    }
+}
+```
+
+overload vs override(重载和重写)
+
+### 基本数据的自动拆装箱
+
+```java
+    public static void main( String[] args ) {
+        // 在java1.5之前这种写法是错误的，需要使用Integer x = new Integer(5);
+        //自动装箱
+        Integer c = 5;
+        // 自动拆箱
+        System.out.println(c + 12);
+    }
+```
+
+```java
+    public static void main( String[] args ) {
+       Integer i1 = 13;
+       Integer i2 = 13;
+       Integer i3 = 137;
+       Integer i4 = 137;
+       System.out.println(i1 == i2);  // true
+       System.out.println(i3 == i4);  // false
+    }
+```
+
+对于基本类型的整数装箱成一个Integer对象的时候，如果大小在一个字节以内（-128~127）之间会缓存起来，这种粒度很小对象很小，大家都在用他又不去怎么改变他的数据，没必要每一个数据创建一个对象。这就是享元设计模式（flyweight）。很多小的对象，很多的属性相同（内部状态），将其变成一个对象，不同的属性变成方法的参数（称为外部状态）。
+
+比喻：像windows图标一样，我们没必要为每一个图标创建一个对象，只是指定图标指定显示位置。
+
+```java
+    public static void main( String[] args ) {
+       Integer i1 = 13;
+       Integer i2 = 13;
+        //也会自动装箱
+       Integer i3 = Integer.valueOf(13);
+       Integer i4 = Integer.valueOf(13);
+        //不会自动装箱
+       Integer i5 = new Integer(13);
+       Integer i6 = new Integer(13);
+       System.out.println(i1 == i2);  // true
+       System.out.println(i3 == i4);  // true
+       System.out.println(i5 == i6);  // false
+    }
+```
+

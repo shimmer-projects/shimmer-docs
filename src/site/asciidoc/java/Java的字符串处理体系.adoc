@@ -1,0 +1,410 @@
+=== 概念
+
+1、用来处理字符串常用的类有3种：String、StringBuffer和StringBuilder
+
+2、三者之间的区别：
+
+都是final类，都不允许被继承；
+
+String类长度是不可变的，StringBuffer和StringBuilder类长度是可以改变的；
+
+StringBuffer类是线程安全的，StringBuilder不是线程安全的；
+
+=== String 和 StringBuffer：
+
+. String类型和StringBuffer类型的主要性能区别：String是不可变的对象，因此每次在对String类进行改变的时候都会生成一个新的string对象，然后将指针指向新的string对象，所以经常要改变字符串长度的话不要使用string，因为每次生成对象都会对系统性能产生影响，特别是当内存中引用的对象多了以后，JVM的GC就会开始工作，性能就会降低；
+
+. 使用StringBuffer类时，每次都会对StringBuffer对象本身进行操作，而不是生成新的对象并改变对象引用，所以多数情况下推荐使用StringBuffer，特别是字符串对象经常要改变的情况；
+
+. 在某些情况下，String对象的字符串拼接其实是被Java Compiler编译成了StringBuffer对象的拼接，所以这些时候String对象的速度并不会比StringBuffer对象慢，例如：
+
+----
+String s1 = “This is only a” + “ simple” + “ test”;
+
+StringBuffer Sb = new StringBuilder(“This is only a”).append(“ simple”).append(“ test”);
+----
+
+生成 String s1对象的速度并不比 StringBuffer慢。其实在Java Compiler里，自动做了如下转换：
+
+Java Compiler直接把上述第一条语句编译为：
+----
+String s2 = “This is only a”;
+String s3 = “ simple”;
+String s4 = “ test”;
+String s1 = s2 + s3 + s4;
+----
+
+这时候，Java Compiler会规规矩矩的按照原来的方式去做，String的concatenation（即+）操作利用了StringBuilder（或StringBuffer）的append方法实现，此时，对于上述情况，若s2，s3，s4采用String定义，拼接时需要额外创建一个StringBuffer（或StringBuilder），之后将StringBuffer转换为String；若采用StringBuffer（或StringBuilder），则不需额外创建StringBuffer
+
+=== StringBuilder
+
+StringBuilder是5.0新增的，此类提供一个与 StringBuffer 兼容的 API，但不保证同步。该类被设计用作 StringBuffer 的一个简易替换，用在字符串缓冲区被单个线程使用的时候（这种情况很普遍）。如果可能，建议优先采用该类，因为在大多数实现中，它比 StringBuffer 要快。两者的方法基本相同
+
+使用策略
+
+. 基本原则：如果要操作少量的数据，用String ；单线程操作大量数据，用StringBuilder ；多线程操作大量数据，用StringBuffer。
+
+. 不要使用String类的”+”来进行频繁的拼接，因为那样的性能极差的，应该使用StringBuffer或StringBuilder类，这在Java的优化上是一条比较重要的原则，例如：
+
+[source, java]
+----
+public class Test {
+    public static void main(String[] args){
+      String result = "";
+      for (String s : hugeArray) {
+        result = result + s;
+      }
+
+      // 使用StringBuilder
+      StringBuilder sb = new StringBuilder();
+      for (String s : hugeArray) {
+        sb.append(s);
+      }
+      String result = sb.toString();
+    }
+}
+----
+
+当出现上面的情况时，显然我们要采用第二种方法，因为第一种方法，每次循环都会创建一个String result用于保存结果，除此之外二者基本相同
+
+. StringBuilder一般使用在方法内部来完成类似”+”功能，因为是线程不安全的，所以用完以后可以丢弃。StringBuffer主要用在全局变量中
+
+. 相同情况下使用 StirngBuilder 相比使用 StringBuffer 仅能获得 10%~15% 左右的性能提升，但却要冒多线程不安全的风险。而在现实的模块化编程中，负责某一模块的程序员不一定能清晰地判断该模块是否会放入多线程的环境中运行，因此：除非确定系统的瓶颈是在 StringBuffer 上，并且确定你的模块不会运行在多线程模式下，才可以采用StringBuilder；否则还是用StringBuffer
+
+
+
+=== StringBuffer
+
+[source, java]
+----
+public class Test {
+    public static void main(String[] args){
+      System.out.println("============追加============");
+      // StringBuffer sb = new StringBuffer("CharSequence");
+      StringBuilder sb = new StringBuilder("CharSequence");
+
+      //  追加
+      sb.append(123).append('a').append("bcd");
+      // 基于ASCII码进行追加
+      sb.appendCodePoint('e');
+
+
+      System.out.println("============插入============");
+      // 在指定索引位置前插入
+      sb.insert(0, "A");
+      System.out.println(sb);
+
+      System.out.println("============替换============");
+      // 替换 由参数三的字符串替换开始索引到结束索引之间的内容
+      sb.replace(0, 2, "abc");
+      System.out.println(sb);
+      // 替换指定索引位置的字符
+      sb.setCharAt(0, 'M');
+      System.out.println(sb);
+
+
+      System.out.println("============访问============");
+      // 访问
+      // 从fromIndex开始向后检索
+      int abc = sb.indexOf("abc", 6);
+      System.out.println(abc);
+      // 从fromIndex开始向前检索
+      int abc1 = sb.lastIndexOf("abc", sb.length());
+      System.out.println(abc1);
+      // 指定索引位置字符
+      char c = sb.charAt(0);
+      System.out.println(c);
+      // 指定索引位置字符的ASCII码
+      int codePointAt = sb.codePointAt(3);
+      System.out.println(codePointAt);
+
+      // 指定索引之前，返回字符ASCII码。该索引范围是1到length()的 char值。
+      int i = sb.codePointBefore(3);
+      System.out.println(i);
+
+      // 在这个序列中的指定文本范围内返回Unicode代码点的数量。
+      // 文本范围始于指定 beginIndex 并延伸到将char在索引 endIndex - 1.
+      // 这样的文本范围的长度(以字符)是 endIndex - beginIndex.
+      int i2 = sb.codePointCount(8, 20);
+      System.out.println(i2);
+
+      System.out.println("============转换============");
+      // 转换
+      // 字符串反转
+      sb.reverse();
+      System.out.println(sb);
+      // 转成字符串
+      String s = sb.toString();
+      System.out.println(s);
+
+
+      System.out.println("============截取============");
+      // 截取
+      // 返回索引区间的字符序列，不修改原数据
+      CharSequence charSequence = sb.subSequence(0, 5);
+      System.out.println(charSequence);
+      // 返回索引区间的字符串，不修改原数据
+      String substring = sb.substring(0, 5);
+      System.out.println(substring);
+
+      // 在原数据上截取前n个字符
+      sb.setLength(5);
+      System.out.println(sb);
+
+
+      System.out.println("============删除============");
+      // 删除
+      // 删除索引区间串，左开右闭的删除
+      sb.delete(2, 5);
+      System.out.println(sb);
+      // 删除指定索引位置的字符
+      sb.deleteCharAt(1);
+      System.out.println(sb);
+
+      // 方法试图减少用于字符序列的存储。如果缓冲区比需要保持其当前的字符序列时，那么它可以被调整大小，以更有效利用空间。
+      sb.trimToSize();
+    }
+}
+----
+
+
+=== [java字符串分解 StringTokenizer用法（比split()方法效率高）](https://www.cnblogs.com/gaopeng527/p/4899237.html)
+
+Java中substring方法可以分解字符串，返回的是原字符串的一个子字符串。如果要讲一个字符串分解为一个一个的单词或者标记，StringTokenizer可以帮你。
+
+int countTokens（）：返回nextToken方法被调用的次数。
+boolean hasMoreTokens（）：返回是否还有分隔符。
+boolean hasMoreElements（）：返回是否还有分隔符。
+String nextToken（）：返回从当前位置到下一个分隔符的字符串。
+Object nextElement（）：返回从当前位置到下一个分隔符的字符串。
+String nextToken（String delim）：与4类似，以指定的分隔符返回结果。
+
+先看个例子：
+
+[source, java]
+----
+public class Test {
+    public static void main(String[] args) {
+      StringTokenizer st = new StringTokenizer("www.ooobj.com", ".b");
+      while(st.hasMoreTokens()){
+        System.out.println("Token:" + st.nextToken());
+      }
+    }
+}
+----
+
+
+输出：
+Token:www
+Token:ooo
+Token:j
+Token:com
+
+**StringTokenizer有两个常用的方法：**
+
+1.hasMoreElements()。这个方法和hasMoreTokens()方法的用法是一样的，只是StringTokenizer为了实现Enumeration接口而实现的方法，从StringTokenizer的声明可以看到：class StringTokenizer implements Enumeration<Object>。
+
+2.nextElement()。这个方法和nextToken()方法的用法是一样的，返回此 StringTokenizer 的下一个标记。
+
+**StringTokenizer的三个构造方法：**
+
+1.StringTokenizer(String str)。默认以” \t\n\r\f”（前有一个空格，引号不是）为分割符。
+源码：
+public StringTokenizer(String str) {
+this(str, ” \t\n\r\f”, false);
+}
+
+实例：
+
+[source, java]
+----
+public class Test {
+    public static void main(String[] args) {
+        StringTokenizer st = new StringTokenizer("www ooobj com");
+        while(st.hasMoreElements()){
+            System.out.println("Token:" + st.nextToken());
+        }
+    }
+}
+----
+
+输出：
+Token:www
+Token:ooobj
+Token:com
+
+2.StringTokenizer(String str, String delim)。指定delim为分割符，看第一个例子。
+
+3.StringTokenizer(String str, String delim, boolean returnDelims)。returnDelims为true的话则delim分割符也被视为标记。
+
+实例：
+
+[source, java]
+----
+public class Test {
+  public static void main(String[] args) {
+    StringTokenizer st = new StringTokenizer("www.ooobj.com", ".", true);
+    while(st.hasMoreElements()){
+      System.out.println("Token:" + st.nextToken());
+    }
+  }
+}
+----
+
+:hardbreaks:
+输出：
+Token:www
+Token:.
+Token:ooobj
+Token:.
+Token:com
+
+
+**Java StringTokenizer** 属于 java.util 包，用于分隔字符串。
+
+**StringTokenizer 构造方法：**
+
+- **1. StringTokenizer(String str)** ：构造一个用来解析 str 的 StringTokenizer 对象。java 默认的分隔符是空格("")、制表符(\t)、换行符(\n)、回车符(\r)。
+- **2. StringTokenizer(String str, String delim)** ：构造一个用来解析 str 的 StringTokenizer 对象，并提供一个指定的分隔符。
+- **3. StringTokenizer(String str, String delim, boolean returnDelims)** ：构造一个用来解析 str 的 StringTokenizer 对象，并提供一个指定的分隔符，同时，指定是否返回分隔符。
+
+**StringTokenizer 常用方法：**
+
+- **1. int countTokens()**：返回nextToken方法被调用的次数。
+- **2. boolean hasMoreTokens()**：返回是否还有分隔符。
+- **3. boolean hasMoreElements()**：判断枚举 （Enumeration） 对象中是否还有数据。
+- **4. String nextToken()**：返回从当前位置到下一个分隔符的字符串。
+- **5. Object nextElement()**：返回枚举 （Enumeration） 对象的下一个元素。
+- **6. String nextToken(String delim)**：与 4 类似，以指定的分隔符返回结果。
+
+
+
+Java 1.5开始，提供了类似C语言格式化文本的功能。与在java.util包下与格式化有关的类或接口有4个，分别是Formattable、FormattableFlags、Formatter、FormatFlagsConversionMismatchException。其中，最主要的是Formatter类与Formattable接口，另外两个FormattableFlags是为Formattable接口提供服务的，FormatFlagsConversionMismatchException是异常类。
+
+**一、Formatter的用法**
+
+先来分析Formatter的用法，通过分析源码，我们可以看到，Formatter的构造函数有12个，可见Formatter的功能非常大强大，不过，这12个可以分成如下几类，一类是字符串操作Formatter(),Formatter(Appendable a),Formatter(Appendable a, Locale l),Formatter(Local l);一类是关于文件的操作，分别是Formatter(File file),Formatter(File file, String csn),Formattter(File file, String csn, Local l),Formatter(String fileName),Formatter(String filename, String csn),Formatter(String filename, String csn, Locale l);一类是关于输出流的操作，分别是Formatter(OutputStream os),Formatter(OutputStream os , String csn),Formatter(OutputStream os, String csn, Local l),Formatter(PrintStream ps)
+
+1、 对字符串的操作
+
+针对的是实现Appendable接口的字符串，我们对Appendable接口可能比较陌生，但是对于实现了改接口的StringBuffer、StringBuilder类肯定比较熟悉，他们共同的特点就是都有append函数。以下代码实现对字符串的操作：
+
+
+[source, java]
+----
+public class Test {
+  public static void main(String[] args){
+    StringBuilder sb = new StringBuilder();
+    Formatter formatter = new Formatter(sb, Locale.UK);
+    formatter.format("%4$2s %3$2s %2$2s %1$2s", "a", "b", "c", "d");
+    System.out.println(sb);
+    formatter.format(Locale.FRANCE, "e = %+10.4f", Math.E);
+    System.out.println(sb);
+
+    // String balanceDelta = "mmmm";
+    formatter.format("Amount gained or lost since last statement: $ %(,.2f", Math.E);
+    System.out.println(sb);
+  }
+}
+----
+
+2、 对文件的操作
+
+以下代码可以实现文件的写操作。
+[source, java]
+----
+public class Test {
+  public static void main(String[] args){
+    File f = new File("C:/Temp/InstallConfig.ini");
+    try {
+      Formatter formatter = new Formatter(f);
+      formatter.format("%4$2s %3$2s %2$2s %1$2s", "a", "b", "c", "d");
+      formatter.format("%4$2s %3$2s %2$2s %1$2s", "a", "b", "c", "d");
+      formatter.flush();
+      formatter.close();
+    } catch (FileNotFoundException e) {
+      e.printStackTrace();
+    }
+  }
+}
+----
+
+3、 对输出流的操作
+
+以下代码实现输出流的操作
+[source, java]
+----
+public class Test {
+  public static void main(String[] args){
+    try {
+      //BufferedOutputStream bos = new BufferedOutputStream(System.out);
+      Formatter formatter = new Formatter(System.out);
+      formatter.format("%4$2s %3$2s %2$2s %1$2s", "a", "b", "c", "d");
+      formatter.format("%4$2s %3$2s %2$2s %1$2s", "a", "b", "c", "d");
+      formatter.flush();
+      formatter.close();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+}
+----
+
+通过以上代码，我们知道了Formatter的使用场景，接下来分析如何使用。Formatter里面最主要的函数就是format()函数,该函数实现了重载，分别是public Formatter format(String format, Object ... args)与public Formatter format(Locale l, String format, Object ... args)，其中，第一个函数是在内部调用了第二个函数。
+
+----
+Locale l：本地方言
+String format：要格式化的字符串
+Object ... args：可变个数的参数对象
+----
+
+要格式化字符串，在字符串中就需要声明，声明的格式如下：
+
+----
+%[argument_index$][flags][width][.precision]conversion
+argument_index：后面参数... args的位置，从1到参数的个数；
+flags：可选 flags 是修改输出格式的字符集。有效标志集取决于转换类型
+width：控制一个域的最小值，默认情况下下是右对齐的，可以通过使用“-”标志来改变对其方向。
+precision：精度，用于String时，表示输出字符的最大数量，用于浮点数时，表示小数部分要显示出来的 位数（默认是6位），多则舍入，少则补0，用于整数会触发异常。
+conversion：转换格式。
+----
+具体用法可参见：
+
+http://www.itzhai.com/java-notes-java-in-the-formatted-output-formatter-class-presentation.html
+
+
+
+=== 二、Formattable的用法
+
+凡是继承实现了Formattable接口的对象，都可以被Formatter格式化，不过，格式化的conversion只能是以’s’结尾的，jdk中提供了一个例子。有兴趣的可以看一下。
+
+
+java.util
+StringJoiner
+[source, java]
+----
+public class Test {
+    public static void main(String[] args){
+      StringJoiner sj = new StringJoiner(",", "[", "]");
+      sj.add("George").add("Sally").add("Fred");
+      String desiredString = sj.toString();
+      System.out.println(desiredString);
+
+      StringJoiner joiner = new StringJoiner(",", "[", "]");
+      joiner.setEmptyValue("<empty>");
+      System.out.println(joiner.toString());
+      joiner.add("Bruce");
+      joiner.merge(sj);
+      System.out.println(joiner);
+    }
+}
+----
+String.join()方法底层的实现就是使用的StringJoiner，
+
+StringTokenizer
+FormatFlagsConversionMismatchException
+Formattable
+FormattableFlags
+Formatter
+FormatterClosedException
+

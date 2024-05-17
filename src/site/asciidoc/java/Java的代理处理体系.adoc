@@ -1,0 +1,623 @@
+=== 概述
+
+我们大家都知道微商代理，简单地说就是代替厂家卖商品，厂家“委托”代理为其销售商品。关于微商代理，首先我们从他们那里买东西时通常不知道背后的厂家究竟是谁，也就是说，“委托者”对我们来说是不可见的;其次，微商代理主要以朋友圈的人为目标客户，这就相当于为厂家做了一次对客户群体的“过滤”。我们把微商代理和厂家进一步抽象，前者可抽象为代理类，后者可抽象为委托类(被代理类)。通过使用代理，通常有两个优点，并且能够分别与我们提到的微商代理的两个特点对应起来：
+
+- 优点一：可以隐藏委托类的实现;
+- 优点二：可以实现客户与委托类间的解耦，在不修改委托类代码的情况下能够做一些额外的处理。
+
+=== 静态代理
+
+若代理类在程序运行前就已经存在，那么这种代理方式被成为 静态代理 ，这种情况下的代理类通常都是我们在Java代码中定义的。 通常情况下， 静态代理中的代理类和委托类会实现同一接口或是派生自相同的父类。 下面我们用Vendor类代表生产厂家，BusinessAgent类代表微商代理，来介绍下静态代理的简单实现，委托类和代理类都实现了Sell接口，Sell接口的定义如下：
+
+[source, java]
+----
+/**
+ * 委托类和代理类都实现了Sell接口
+ */
+public interface Sell {
+    void sell();
+    void ad();
+}
+----
+
+Vendor类的定义如下：
+
+[source, java]
+----
+/**
+ * 生产厂家
+ */
+public class Vendor implements Sell {
+    public void sell() {
+        System.out.println("In sell method");
+    }
+
+    public void ad() {
+        System,out.println("ad method");
+    }
+}
+----
+
+代理类BusinessAgent的定义如下：
+
+[source, java]
+----
+/**
+ * 代理类
+ */
+public class BusinessAgent implements Sell {
+    private Sell vendor;
+
+    public BusinessAgent(Sell vendor){
+        this.vendor = vendor;
+    }
+
+    public void sell() {
+        vendor.sell();
+    }
+
+    public void ad() {
+        vendor.ad();
+    }
+}
+----
+从BusinessAgent类的定义我们可以了解到，静态代理可以通过聚合来实现，让代理类持有一个委托类的引用即可。
+下面我们考虑一下这个需求：给Vendor类增加一个过滤功能，只卖货给大学生。通过静态代理，我们无需修改Vendor类的代码就可以实现，只需在BusinessAgent类中的sell方法中添加一个判断即可如下所示：
+
+[source, java]
+----
+/**
+ * 代理类
+ */
+public class BusinessAgent() implements Sell {
+    private Sell vendor;
+
+    public BusinessAgent(Sell vendor){
+        this.vendor = vendor;
+    }
+
+    public void sell() {
+        if (isCollegeStudent()) {
+            vendor.sell();
+        }
+    }
+
+    public void ad() {
+        vendor.ad();
+    }
+}
+----
+
+这对应着我们上面提到的使用代理的第二个优点：可以实现客户与委托类间的解耦，在不修改委托类代码的情况下能够做一些额外的处理。静态代理的局限在于运行前必须编写好代理类，下面我们重点来介绍下运行时生成代理类的动态代理方式。
+
+
+
+=== 动态代理
+
+代理类在程序运行时创建的代理方式被成为 动态代理。 也就是说，这种情况下，代理类并不是在Java代码中定义的，而是在运行时根据我们在Java代码中的“指示”动态生成的。相比于静态代理， 动态代理的优势在于可以很方便的对代理类的函数进行统一的处理，而不用修改每个代理类的函数。 这么说比较抽象，下面我们结合一个实例来介绍一下动态代理的这个优势是怎么体现的。
+现在，假设我们要实现这样一个需求：在执行委托类中的方法之前输出“before”，在执行完毕后输出“after”。我们还是以上面例子中的Vendor类作为委托类，BusinessAgent类作为代理类来进行介绍。首先我们来使用静态代理来实现这一需求，相关代码如下：
+
+[source, java]
+----
+public class BusinessAgent implements Sell {
+    private Vendor mVendor;
+
+    public BusinessAgent(Vendor vendor) {
+        this.mVendor = vendor;
+    }
+
+    public void sell() {
+        System.out.println("before");
+        mVendor.sell();
+        System.out.println("after");
+    }
+
+    public void ad() {
+        System.out.println("before");
+        mVendor.ad();
+        System.out.println("after");
+    }
+}
+----
+从以上代码中我们可以了解到，通过静态代理实现我们的需求需要我们在每个方法中都添加相应的逻辑，这里只存在两个方法所以工作量还不算大，假如Sell接口中包含上百个方法呢?这时候使用静态代理就会编写许多冗余代码。通过使用动态代理，我们可以做一个“统一指示”，从而对所有代理类的方法进行统一处理，而不用逐一修改每个方法。下面我们来具体介绍下如何使用动态代理方式实现我们的需求。
+
+
+==== JDK动态代理
+
+===== InvocationHandler接口
+在使用动态代理时，我们需要定义一个位于代理类与委托类之间的中介类，这个中介类被要求实现InvocationHandler接口，这个接口的定义如下：
+
+[source, java]
+----
+/**
+ * 调用处理程序
+ */
+public interface InvocationHandler {
+    Object invoke(Object proxy, Method method, Object[] args);
+}
+----
+从InvocationHandler这个名称我们就可以知道，实现了这个接口的中介类用做“调用处理器”。当我们调用代理类对象的方法时，这个“调用”会转送到invoke方法中，代理类对象作为proxy参数传入，参数method标识了我们具体调用的是代理类的哪个方法，args为这个方法的参数。这样一来，我们对代理类中的所有方法的调用都会变为对invoke的调用，这样我们可以在invoke方法中添加统一的处理逻辑(也可以根据method参数对不同的代理类方法做不同的处理)。因此我们只需在中介类的invoke方法实现中输出“before”，然后调用委托类的invoke方法，再输出“after”。下面我们来一步一步具体实现它。
+
+===== 委托类的定义
+动态代理方式下，要求委托类必须实现某个接口，这里我们实现的是Sell接口。委托类Vendor类的定义如下：
+
+[source, java]
+----
+public class Vendor implements Sell {
+    public void sell() {
+        System.out.println("In sell method");
+    }
+
+    public void ad() {
+        System,out.println("ad method");
+    }
+}
+----
+
+===== 中介类
+上面我们提到过，中介类必须实现InvocationHandler接口，作为调用处理器”拦截“对代理类方法的调用。中介类的定义如下：
+[source, java]
+----
+public class DynamicProxy implements InvocationHandler {
+    //obj为委托类对象;
+    private Object obj;
+
+    public DynamicProxy(Object obj) {
+        this.obj = obj;
+    }
+
+    @Override
+    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        System.out.println("before");
+        Object result = method.invoke(obj, args);
+        System.out.println("after");
+        return result;
+    }
+}
+
+----
+
+从以上代码中我们可以看到，中介类持有一个委托类对象引用，在invoke方法中调用了委托类对象的相应方法，看到这里是不是觉得似曾相识?
+通过聚合方式持有委托类对象引用，把外部对invoke的调用最终都转为对委托类对象的调用。这不就是我们上面介绍的静态代理的一种实现方式吗?
+实际上，中介类与委托类构成了静态代理关系，在这个关系中，中介类是代理类，委托类就是委托类;
+代理类与中介类也构成一个静态代理关系，在这个关系中，中介类是委托类，代理类是代理类。
+也就是说，动态代理关系由两组静态代理关系组成，这就是动态代理的原理。下面我们来介绍一下如何”指示“以动态生成代理类。
+
+===== 动态生成代理类
+
+动态生成代理类的相关代码如下：
+
+[source, java]
+----
+public class Main {
+    public static void main(String[] args) {
+        //创建中介类实例
+        DynamicProxy inter = new DynamicProxy(new Vendor());
+        //加上这句将会产生一个$Proxy0.class文件，这个文件即为动态生成的代理类文件
+        System.getProperties().put("sun.misc.ProxyGenerator.saveGeneratedFiles","true");
+
+        //获取代理类实例sell
+        Sell sell = (Sell)(Proxy.newProxyInstance(Sell.class.getClassLoader(), new Class[] {Sell.class}, inter));
+
+        //通过代理类对象调用代理类方法，实际上会转到invoke方法调用
+        sell.sell();
+        sell.ad();
+    }
+}
+----
+在以上代码中，我们调用Proxy类的newProxyInstance方法来获取一个代理类实例。这个代理类实现了我们指定的接口并且会把方法调用分发到指定的调用处理器。这个方法的声明如下：
+
+[source, java]
+----
+public static Object newProxyInstance(ClassLoader loader, Class<?>[] interfaces, InvocationHandler h) throws IllegalArgumentException
+----
+
+方法的三个参数含义分别如下：
+
+loader：定义了代理类的ClassLoder;
+interfaces：代理类实现的接口列表
+h：调用处理器，也就是我们上面定义的实现了InvocationHandler接口的类实例
+
+
+Proxy.newProxyInstance(ClassLoader, interfaces, new InvocationHandler() {
+invoke(obj, method, args)
+})
+
+
+
+==== cglib动态代理
+
+enhancer = new Enhancer()
+
+enhancer.setSuperClasses();
+enhancer.setCallback(new MethodInterceptor() {
+interceptor(Object, method, args)
+})
+
+
+=== 代理模式
+
+代理模式最大的特点就是代理类和实际业务类实现同一个接口（或继承同一父类），代理对象持有一个实际对象的引用，外部调用时操作的是代理对象，而在代理对象的内部实现中又会去调用实际对象的操作
+Java动态代理其实内部也是通过Java反射机制来实现的，即已知的一个对象，然后在运行时动态调用其方法，这样在调用前后作一些相应的处理，这样说的比较笼统，举个简单的例子
+比如我们在应用中有这样一个需求，在对某个类的一个方法的调用前和调用后都要做一下日志操作，
+一个普通的接口
+[source,java]
+----
+public interface AppService {
+    public boolean createApp(String name);
+}
+----
+
+该接口的默认实现类
+[source,java]
+----
+public class AppServiceImpl implements AppService {
+    public boolean createApp(String name) {
+      System.out.println("App["+name+"] has been created.");
+      return true;
+    }
+}
+----
+
+日志处理器（实质充当了中介类）
+
+[source,java]
+----
+/**
+* 注意需实现Handler接口
+*/
+public class LoggerInterceptor implements InvocationHandler {
+    private Object target;//目标对象的引用，这里设计成Object类型，更具通用性
+    public LoggerInterceptor(Object target){
+        this.target = target;
+    }
+
+    public Object invoke(Object proxy, Method method, Object[] arg)  throws Throwable {
+        System.out.println("Entered "+target.getClass().getName()+"-"+method.getName()+",with arguments{"+arg[0]+"}");
+        Object result = method.invoke(target, arg);//调用目标对象的方法
+        System.out.println("Before return:"+result);
+        return result;
+    }
+}
+----
+
+外部调用
+
+[source,java]
+----
+public class Main {
+    public static void main(String[] args) {
+        AppService target = new AppServiceImpl();//生成目标对象
+        //接下来创建代理对象
+        AppService proxy = (AppService) Proxy.newProxyInstance(
+                target.getClass().getClassLoader(),
+                target.getClass().getInterfaces(), new LoggerInterceptor(target));
+        proxy.createApp("Kevin Test");
+    }
+}
+----
+
+wrapper / decorator 装饰/包装
+proxy 代理
+delegate 委派/委托
+
+为让自己的能力增强，使得增强后的自己能够使用更多的方法，拓展在自己基础之上的功能的，叫装饰器模式
+
+对装饰器模式来说，装饰者（decorator）和被装饰者（decoratee）都实现同一个 接口。对代理模式来说，代理类（proxy class）和真实处理的类（real class）都实现同一个接口。他们之间的边界确实比较模糊，两者都是对类的方法进行扩展，具体区别如下：
+
+1、装饰器模式强调的是增强自身，在被装饰之后你能够在被增强的类上使用增强后的功能。增强后你还是你，只不过能力更强了而已；代理模式强调要让别人帮你去做一些本身与你业务没有太多关系的职责（记录日志、设置缓存）。代理模式是为了实现对象的控制，因为被代理的对象往往难以直接获得或者是其内部不想暴露出来。
+
+2、装饰模式是以对客户端透明的方式扩展对象的功能，是继承方案的一个替代方案；代理模式则是给一个对象提供一个代理对象，并由代理对象来控制对原有对象的引用；
+
+3、装饰模式是为装饰的对象增强功能；而代理模式对代理的对象施加控制，但不对对象本身的功能进行增强；
+
+
+### 代理
+
+#### 代理的概念与作用
+
+- 生活中的代理
+
+  从代理商手中够买电脑。
+
+- 程序中的代理
+
+- 腰要为已存在的多个具有相同接口的目标类的各个方法增加一些系统的功能，例如，异常处理、日志、计算方法的运行时间、事务管理、等等。
+- 编写一个与目标类具有相同接口的代理类，代理类的每个方法调用目标类的相同方法，并在调用方法时加上系统功能的代码。下图为原理图
+- 如果采用工厂模式和配置文件的方式进行管理，则不需要修改客户端程序，在配置文件中配置是使用目标类还是代理类，这样，增加系统功能很容易，以后运行一段时间后，邮箱去掉系统功能也很容易。
+
+  image:../images/代理架构图.png[]
+
+#### AOP
+
+- 系统中存在交叉业务，一个交叉业务就是要切入到系统中的一个方面，如下所示：
+
+  ​	                          安全   事务    日志
+
+  StudentService -------|-------|--------|--------
+
+  CourseService---------|-------|--------|--------
+
+  MiscService-------------|-------|--------|-------
+
+  像安全、事务、日志等功能贯穿到好多个模块中，所以他们就是交叉业务。
+
+- 用具体的程序代码描述交叉业务：
+
+  method1     method2    method3
+
+  {                     {                  {
+
+  -------------------切面----------------------
+
+  ......
+
+  -------------------切面----------------------
+
+  }                     }                   }
+
+- 交叉业务的编程问题即为面向方面的编程(Aspect oriented program 简称AOP)，AOP的目标就是要使交叉业务模块化。可以采用将切面代码移动到原始方法的周围，这与直接在方法中编写切面代码的运行效果是一样的，如下所示：
+
+  ------------------------------------------切面
+
+  method1     method2    method3
+
+  {                     {                  {
+
+  }                     }                   }
+
+  ------------------------------------------切面
+
+- 使用代理技术正好可以理解这种问题，代理是实现AOP功能的核心关键技术
+
+- 重要原则：不要把你的供货商暴露给你的客户。
+
+#### 动态代理技术
+
+- 要为系统中的各种接口的类增加代理功能，那将需要太多的代理类，全部采用静态代理方式，僵尸一件非常麻烦的事情！谢程程百上千个代理类，是不是太累！
+- JVM可以在运行期动态生成出类的字节码，这种动态生成的类往往被用做代理类，即动态代理类。
+- JVM生成的动态类必须实现一个或多个接口，所以，JVM生成的动态类只能用作具有相同接口的目标类的代理。
+- CGLIB库可以动态生成一个类的子类，一个类的子类也可以用作该类的代理，所以，如果要为一个没有实现接口的类生成动态代理类，那么可以使用CGLIB库。
+- 代理类的各个方法中通常除了要调用目标的响应方法和对外返回目标返回的结果外，还可以在代理方法中的如下四个位置加上系统功能代码：
+- 在调用目标方法之前
+- 在调用目标方法之后
+- 在调用目标方法前后
+- 在处理目标方法异常的catch块中
+
+#### 分析JVM动态生成的类
+
+- 创建实现了Collection接口的动态类和查看其名称，分析Proxy.getPtoxyClass方法的各个参数。
+- 变吗列出动态类中的所有方法和参数签名
+- 创建动态类的实例对象
+- 用反射获得构造方法
+- 编写一个最简单的InvocationHandler类
+- 调用构造方法创建动态类的实例对象，并将编写的InvocationHandler类的实例对象传进去
+- 打印创建的对象和调用对象的没有返回值的方法和getClass方法，演示调用其他有返回值的方法报告了异常。
+- 将创建懂爱太累的示例对象的dialing改成匿名内部类的形式编写，锻炼大家习惯匿名内部类。
+- 总结思考：让JVM创建动态类，需要给他提供哪些信息？
+- 生成的类中有哪些方法，通过让其实现哪些接口的方式进行告知。
+- 产生的类字节码必须有一个关联的类加载器对象。
+- 生成的类中的方法的代码是怎样的，也得有我们提供。把我们的代码卸载一个约定好了借口对象的方法中，把对象传给他，他调用我的方法，即相当于插入了我的代码。提供执行代码的对象就是那个InvocationHandler对象，他是在创建动态类的实例对象的构造方法时传递进去的。在上面的InvocationHandler对象的invoke方法中加一点代码，就可以看到这些代码被调用运行了。
+- 用Proxy.newInstance方法直接就创建出代理对象。
+
+#### 猜想分析动态生成的类的内部代码
+
+- 动态生成的类实现了Collection接口(可以实现若干接口)，生成的类有Collection接口中的所有方法和一个如下接收InvocationHandler参数的构造方法。
+- 构造方法接受一个InvocationHandler对象，接收对象了要干什么用呢？该方法内部的代码会怎样的呢？
+- 实现的Collection接口中的各个方法的代码又是怎样的呢？InvocationHandler接口中定义的invoke方法接收的三个参数有时什么意思？图解说明如下:
+
+
+
+image:../images/1536234285_27760.png[]
+image:../images/1536234520_23025.png[]
+
+#### 让动态生成的类成为目标类的代理
+
+- 分析动态代理的工作原理图
+- 怎样将目标类传递进去？
+- 直接在InvocationHandler实现类中创建目标类的实例对象，可以看运行效果和加入日志代码，但没有实际意义。
+- 为InvocationHandler实现类注入目标类的实例对象，不能采用匿名内部类的形式了。
+- 让匿名的InvocationHandler实现类访问外面方法中的目标类实例对象的final类型的引用变量。
+- 将创建代理的过程改为一种更优雅的方式，重构出一个getProxy方法绑定接收目标同时返回代理对象，让调用者更懒惰、更方便，调用者设置不用接触任何代理的API。
+- 将系统工程代码模块化，即将切面代码也改为通过参数形式提供，怎样把要执行的系统功能代码以参数形式提供？
+- 把要执行的代码装到一个对象的某个方法了，然后把这个对象作为参数传递，接受者只要调用这个对象的方法，即等于执行了外界提供的代码！
+- 为bind方法增加一个Advice参数。
+
+#### 实现AOP功能的封装与配置
+
+- 工厂类BeanFactory负责创建目标类或代理类的示例对象，并通过配置文件实现切换。其getBean方法根据参数字符串返回一个相应的实例对象，如果参数字符串在配置文件中对应的雷鸣不是ProxyFactoryBean，则直接返回该类的实例对象，否则，返回该类实例对象的getProxy方法返回的对象。
+
+- BeanFactory的构造方法接受代表配置文件的输入流对象，配置文件格式如下：
+
+  #xxx = java.util.ArrayList
+
+  xxx = com.yuhaiyang.ProxyFactoryBean
+
+  xxx.target=java.util.ArrayList
+
+  xxx.advice=com.yuhaiyang,MyAdvice
+
+- ProxyFactoryBean充当封装生成动态代理的工厂，需要为工厂类提供那些配置参数信息？
+
+- 目标
+- 通知
+
+- 编写客户端应用
+
+- 编写实现Advice接口的类和在配置文件中进行配置
+- 调用BeanFactory获取对象
+
+```java
+package top.chsi;
+
+import java.lang.reflect.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
+public class ProxyTest {
+    public static void main(String[] args) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+        Class<?> clazzProcy1 = Proxy.getProxyClass(Collection.class.getClassLoader(), Collection.class);
+        System.out.println(clazzProcy1.getName());
+        Constructor<?>[] constructors = clazzProcy1.getConstructors();
+        System.out.println("begin constructors list ---");
+        for (Constructor constructor : constructors) {
+            String name = constructor.getName();
+            // 单线程使用StringBuilder， 多线程使用StringBuffer
+            StringBuilder stringBuilder = new StringBuilder(name);
+            stringBuilder.append("(");
+            Class[] clazzParams = constructor.getParameterTypes();
+            for (Class clazzParam : clazzParams) {
+                stringBuilder.append(clazzParam.getName()).append(",");
+            }
+            if (clazzParams.length != 0 && clazzParams != null) {
+                stringBuilder.deleteCharAt(stringBuilder.length() - 1);
+            }
+            stringBuilder.append(")");
+            System.out.println(stringBuilder.toString());
+        }
+
+        Method[] methods = clazzProcy1.getMethods();
+        System.out.println("begin methods list ---");
+        for (Method method : methods) {
+            String name = method.getName();
+            // 单线程使用StringBuilder， 多线程使用StringBuffer
+            StringBuilder stringBuilder = new StringBuilder(name);
+            stringBuilder.append("(");
+            Class[] clazzParams = method.getParameterTypes();
+            for (Class clazzParam : clazzParams) {
+                stringBuilder.append(clazzParam.getName()).append(",");
+            }
+            if (clazzParams != null && clazzParams.length != 0) {
+                stringBuilder.deleteCharAt(stringBuilder.length() - 1);
+            }
+            stringBuilder.append(")");
+            System.out.println(stringBuilder.toString());
+        }
+
+
+        System.out.println("create instence object");
+        // 没有无参构造，以下方法不可以
+//        Object o = clazzProcy1.newInstance();
+        Constructor constructor = clazzProcy1.getConstructor(InvocationHandler.class);
+
+        class MyInvocationHandler1 implements InvocationHandler {
+
+            @Override
+            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                return null;
+            }
+        }
+        Collection proxy1 = (Collection) constructor.newInstance(new MyInvocationHandler1());
+        // 打印为null 不一定是没有对象，可能toString就是空
+        System.out.println(proxy1);
+        // 如果对象为空，使用这个打印会报空指针
+        System.out.println(proxy1.toString());
+
+        proxy1.clear();
+        // 视频中演示报空指针
+//        proxy1.size();
+
+
+        Collection proxy2 = (Collection) constructor.newInstance(new InvocationHandler() {
+            @Override
+            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                return null;
+            }
+        });
+
+
+        Collection proxy3 = (Collection) Proxy.newProxyInstance(
+                Collection.class.getClassLoader(),
+                new Class[]{Collection.class},
+                new InvocationHandler() {
+                    @Override
+                    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                        List target = new ArrayList();
+                        long begin = System.currentTimeMillis();
+                        Object retVal = method.invoke(target, args);
+                        long end = System.currentTimeMillis();
+                        System.out.println(method.getName() + "running time" + (end - begin));
+                        return retVal;
+                    }
+                });
+        proxy3.add("xsadf");
+        proxy3.add("hhh");
+        proxy3.add("ddd");
+        System.out.println(proxy3.size());
+
+        Collection proxy4 = (Collection) Proxy.newProxyInstance(
+                Collection.class.getClassLoader(),
+                new Class[]{Collection.class},
+                new InvocationHandler() {
+                    List target = new ArrayList();
+
+                    @Override
+                    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                        long begin = System.currentTimeMillis();
+                        Object retVal = method.invoke(target, args);
+                        long end = System.currentTimeMillis();
+                        System.out.println(method.getName() + "running time" + (end - begin));
+                        return retVal;
+                    }
+                }
+        );
+        proxy4.add("xsadf");
+        proxy4.add("hhh");
+        proxy4.add("ddd");
+        System.out.println(proxy4.size());
+        // 看文档
+        System.out.println(proxy4.getClass().getName());
+
+        // 做成框架
+        final List target = new ArrayList();
+        Collection proxy5 = (Collection)getProxy(target, new MyAdvice());
+        proxy5.add("xsadf");
+        proxy5.add("hhh");
+        proxy5.add("ddd");
+        // 看文档
+        System.out.println(proxy5.size());
+        System.out.println(proxy5.getClass().getName());
+    }
+
+    private static Object getProxy(final Object target, final Advice advice) throws IllegalAccessException, InvocationTargetException {
+        return Proxy.newProxyInstance(
+                target.getClass().getClassLoader(),
+                target.getClass().getInterfaces(),
+                new InvocationHandler() {
+
+                    @Override
+                    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                        advice.beforeMethod(method);
+                        Object retVal = method.invoke(target, args);
+                        advice.afterMethod(method);
+                        return retVal;
+                    }
+                }
+        );
+    }
+}
+
+interface Advice {
+    void beforeMethod(Method method);
+    void afterMethod(Method method);
+}
+
+class MyAdvice implements Advice {
+    private long begin = 0;
+
+    @Override
+    public void beforeMethod(Method method) {
+        System.out.println("开始");
+        begin = System.currentTimeMillis();
+    }
+
+    @Override
+    public void afterMethod(Method method) {
+        System.out.println("结束");
+        long end = System.currentTimeMillis();
+        System.out.println(end - begin);
+    }
+}
+```
+

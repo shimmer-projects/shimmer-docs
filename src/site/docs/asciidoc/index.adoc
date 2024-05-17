@@ -1,0 +1,178 @@
+= Java技术体系化学习笔记
+于海洋 <yu_haiyang@foxmail.com>
+v1.0, 2020-10-30
+:title-logo-image: image::logo.png[]
+:toc: left
+:toc-title: 目录
+:toclevels: 4
+:source-highlighter: coderay
+:imagesdir: images
+:docinfodir: meta
+:docinfo: shared
+:icons: font
+:icon-set: fas
+:lang: zh-Hans-CN
+:chapter-label:
+:appendix-caption: 附录
+:title-page:
+:sectnums:
+:sectanchors:
+:sectlinks:
+:experimental:
+
+:quick-uri: http://asciidoctor.org/docs/asciidoc-syntax-quick-reference/
+
+:hardbreaks:
+本文代码环境:
+java version "11.0.8" 2020-07-14 LTS
+Java(TM) SE Runtime Environment 18.9 (build 11.0.8+10-LTS)
+Java HotSpot(TM) 64-Bit Server VM 18.9 (build 11.0.8+10-LTS, mixed mode)
+
+**没有任何一种学习方法比体系化学习来的更加直接、快速、深入**
+
+//[#overview]
+//== 概述
+//include::chapter/概述.adoc[]
+//
+//<<<
+//
+//[#content-en]
+//== 内容模板：英文版
+//include::chapter/content-en.adoc[]
+//
+//<<<
+//
+//[#content-cn]
+//== 内容模板：中文版
+//include::chapter/content-cn.adoc[]
+//
+//<<<
+//
+//[#src]
+//== 源码示例
+//include::chapter/source.adoc[]
+//
+//<<<
+//
+// [#jdk-jdbc]
+// == Java的JDBC处理体系
+// include::jdk11/Java的JDBC处理体系.adoc[]
+//
+// <<<
+//
+// [#jdk-time]
+// == Java的时间日期处理体系
+// include::jdk11/Java的时间日期处理体系.adoc[]
+//
+// <<<
+//
+// [#jdk-reflet]
+// == Java的反射处理体系
+// include::jdk11/Java的反射处理体系.adoc[]
+//
+// <<<
+//
+// [#jdk-enum]
+// == Java的枚举处理体系
+// include::jdk11/Java的枚举处理体系.adoc[]
+//
+// <<<
+//
+// [#jdk-regex]
+// == Java的正则处理体系
+// include::jdk11/Java的正则处理体系.adoc[]
+//
+// [#jdk-io]
+// == Java的I/O处理体系
+// include::jdk11/Java的IO处理体系.adoc[]
+//
+// <<<
+//
+// [#jdk-xml]
+// == Java的XML处理体系
+// include::jdk11/Java的XML处理体系.adoc[]
+//
+// <<<
+//
+// [#jdk-string]
+// == Java的字符串处理体系
+// include::jdk11/Java的字符串处理体系.adoc[]
+//
+// <<<
+//
+// [#jdk-security]
+// == Java的安全处理体系
+// include::jdk11/Java的安全处理体系.adoc[]
+//
+// <<<
+//
+// [#jdk-thread]
+// == Java的并发处理体系
+// include::jdk11/Java的并发处理体系.adoc[]
+//
+// <<<
+//
+// [#jdk-number]
+// == Java的数值处理体系
+// include::jdk11/Java的数值处理体系.adoc[]
+//
+// <<<
+//
+// [#jdk-logging]
+// == Java的日志处理体系
+// include::jdk11/Java的日志处理体系.adoc[]
+//
+// <<<
+//
+// [#jdk-generic]
+// == Java的泛型处理体系
+// include::jdk11/Java的泛型处理体系.adoc[]
+//
+// <<<
+//
+// [#jdk-annotation]
+// == Java的注解处理体系
+// include::jdk11/Java的注解处理体系.adoc[]
+//
+// <<<
+//
+// [#jdk-net]
+// == Java的网络处理体系
+// include::jdk11/Java的网络处理体系.adoc[]
+//
+// <<<
+//
+// [#jdk-collection]
+// == Java的集合处理体系
+// include::jdk11/Java的集合处理体系.adoc[]
+//
+// <<<
+//
+// [#jdk-archive]
+// == Java的归档处理体系
+// include::jdk11/Java的归档处理体系.adoc[]
+//
+// <<<
+//
+// [#jdk-introspector]
+// == Java的内省处理体系
+// include::jdk11/Java的内省处理体系.adoc[]
+//
+// <<<
+//
+// [#jdk-proxy]
+// == Java的代理处理体系
+// include::jdk11/Java的代理处理体系.adoc[]
+//
+// <<<
+//
+// [#jdk-jvm]
+// == JVM体系
+// include::jdk11/JVM体系.adoc[]
+//
+// <<<
+//
+// [appendix]
+// [#appendix-1]
+// == 版本历史
+// include::jdk11/VERSION.adoc[]
