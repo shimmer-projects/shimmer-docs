@@ -1,0 +1,51 @@
+= 关于API编码规范的定义
+
+通常情况下，我们在开发接口的时候，基本使用的接口就是GET POST PUT DELETE 等情况，还有文件上传下载等相对特殊一下的POST和GET请求；
+
+cheer定义了以下组合注解：
+
+[source,java]
+----
+@RestResource(path="", name="", description="")
+@GetResource(path="", name="", description="")
+@PostResource(path="", name="", description="")
+@PutResource(path="", name="", description="")
+@DeleteResource(path="", name="", description="")
+@DownloadResource(path="", name="", description="")
+@ImportResource(path="", name="", description="")
+----
+
+这些注解对RequestMapping中的部分参数进行固定化设置。只保留部分必要的修改属性，这样可以简化使用，同时也为了保持统一的风格。同时让注解也将swagger注解组合进来了通过这一个注解完成整个资源的描述。另外也为导入导出定义了语义化注解，使API清晰明了。
+
+常情况下我们定义一个接口的时候，可能需要定义以下多个注解来对接口进行包装描述
+
+[source,java]
+----
+@Controller
+@RequestMapping(path = "user")
+public class UserController {
+    @GetMapping("fetch")
+    @ResponseBody
+    @Operation(summary = "查询用户", description = "基于支持的查询条件进行用户查询，返回用户列表")
+    public Map<String, Object> fetchUserList() {
+        // todo any thing what you want to do.
+        retrun null;
+    }
+}
+----
+
+使用我们综合包装的接口之后，我们定义一个接口的时候只需要使用一个注解通过不同的参数来进行标注，而不需要去记下一堆注解
+
+[source,java]
+----
+@RestResource(path = "user", name = "用户管理", description = "系统用户相关的管理操作")
+public class UserController {
+    @GetResource(path = "fetch", name = "查询用户", description = "基于支持的查询条件进行用户查询，返回用户列表")
+    public Map<String, Object> fetchUserList() {
+        // todo any thing what you want to do.
+        retrun null;
+    }
+}
+----
+
+整合后的注解，与原生的方式对比，确实存在一些复杂与不直观性，但是这种方式可以对必须包含的注解在编码阶段进行一些默认值的绑定，以及编码阶段的提示性。可以达到对编码规范的统一。同时也对导入导出等方式进行了一些注解的独立化，把通用性的配置进行默认配置，编码过程接口风格也统一起来，同时也语义化。任何人看到代码都不会陌生。

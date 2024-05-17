@@ -1,0 +1,709 @@
+= 文件上传
+
+文件上传是一个老生常谈的话题了，在文件相对比较小的情况下，可以直接把文件转化为字节流上传到服务器，但在文件比较大的情况下，用普通的方式进行上传，这可不是一个好的办法，毕竟很少有人会忍受，当文件上传到一半中断后，继续上传却只能重头开始上传，这种让人不爽的体验。
+
+对于文件的下载功能来说，我归纳为2头1流。极其简单。
+
+- Content-Type 头，告诉客户端文件类型
+- Content-Disposition 头，告诉客户端对于这个文件的处理方式（在浏览器中显示，还是下载）
+- Output 流，写入文件内容到客户端
+
+文件下载经常遇见的问题为文件名称乱码, 文件的名称在请求头的##Content-Disposition##中指定， 如果代码中直接写##response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + "中文の文件.txt");##这段代码，浏览器中下载一定会乱码的。常见的集中解决方案有以下几种：
+
+对文件名称进行URI编码：#response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + URLEncoder.encode("中文の文件.txt", StandardCharsets.UTF_8));#
+
+修改字符编码: #response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + new String("中文の文件.txt".getBytes("GBK"),"ISO-8859-1"));#
+
+spring基于对字符编码修改的方式封装一种实现，示例代码如下：
+
+[source,java]
+----
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+
+@RestController
+@RequestMapping("/demo")
+public class DemoController {
+
+ @GetMapping
+ public void demo (HttpServletResponse response) {
+
+  byte[] content = "Hello Spring".getBytes(StandardCharsets.UTF_8);
+
+  // 文件类型
+        response.setContentType("text/plain");
+        // 文本类型文件的编码
+        response.setCharacterEncoding(StandardCharsets.UTF_8.displayName());
+        // 文件长度
+        response.setContentLength(content.length);
+        // 文件的处理方式。attachment 表示附件，filename 表示文件的名称
+  response.setHeader(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition
+               .attachment()    // 附件形式
+               .filename("中文の文件.txt", StandardCharsets.UTF_8)  // 文件名称 & 编码
+               .build()
+               .toString());
+        response.getOutputStream().write(content);
+ }
+}
+----
+
+以下为几种常用的上传下载代码示例
+
+[source,java]
+----
+package top.chsi;
+
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.constraints.Min;
+import org.hibernate.validator.constraints.Length;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import top.chsi.audit.AuditLog;
+import top.chsi.audit.OperationType;
+import top.chsi.util.annotation.NoResponseWrapper;
+import top.chsi.util.response.ApiResult;
+import top.chsi.spring.resource.*;
+import top.chsi.spring.validator.VG;
+import top.chsi.spring.version.ApiVersion;
+
+import java.io.*;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Created on 2023-03-30 13:35
+ *
+ * @author yu_haiyang
+ */
+
+@RestResource(path = "/body", name = "请求测试接口类", description = "接口")
+@ApiVersion
+public class BodyController {
+
+    @RequestMapping(value = "/response", method = RequestMethod.GET)
+    @ApiVersion("3.1")
+    public ResponseEntity<Map<String, Object>> response(
+            //@AuthenticationPrincipal UserDetails userDetails,
+            @RequestHeader("Authentication") String authentication,
+            String msg,
+            LocalDateTime localTime,
+            LocalTime lt
+    ) {
+        Map<String, Object> res = new HashMap<>();
+        res.put("token", authentication);
+        return ResponseEntity.ok()
+                .header("Custom-Header", "foo")
+                .body(res);
+    }
+
+    /**
+     * 下载文件的方法，将文件从某个存在的位置上下载下来
+     *
+     * @param filename 文件名
+     */
+    @GetMapping("/download")
+    @ResponseBody
+    public ResponseEntity<InputStreamResource> download(@RequestParam("filename") String filename) throws Exception {
+        //指定预下载文件的位置
+        FileSystemResource file = new FileSystemResource("C:\\Users\\yu_haiyang\\Desktop\\files\\" + filename);
+        HttpHeaders httpHeaders = new HttpHeaders();
+        //指定下载后的文件名等，new String(filename.getBytes("UTF-8"),"ISO8859-1")很重要，不然会下载中文名的时候名字为空
+        httpHeaders.add("Content-Disposition", "attachment; filename=" + new String(filename.getBytes(StandardCharsets.UTF_8), "ISO8859-1"));
+        /* 设置该请求头后,js能够获取content-disposition请求头数据,从中获取文件名称 */
+        httpHeaders.add("Access-Control-Expose-Headers", "Content-Disposition");
+        return ResponseEntity.ok()
+                .headers(httpHeaders)
+                .contentLength(file.contentLength())
+                .contentType(MediaType.parseMediaType("application/octet-stream"))
+                .body(new InputStreamResource(file.getInputStream()));
+    }
+
+    // 找一个计算机的磁盘位置，比如 D:\\, 我这里使用的是本项目的路径
+    private static final String BASE_DIR = "C:\\files\\";
+
+    // 定义接口类型和二级路径，完整的接口url是：/file/upload
+    @PostResource(path = "/upload1", name = "上传头像", description = "头像上传")
+    public ResponseEntity<String> upload1(@RequestParam MultipartFile file) {
+        // 获取文件的名称
+        String fileName = file.getOriginalFilename();
+        try {
+            // 新建一个文件路径
+            File uploadFile = new File(BASE_DIR + fileName);
+            // 当父级目录不存在时，自动创建
+            if (!uploadFile.getParentFile().exists()) {
+                boolean ignore = uploadFile.getParentFile().mkdirs();
+            }
+            // 存储文件到电脑磁盘
+            file.transferTo(uploadFile);
+
+        } catch (IOException e) {
+            // 抛出业务异常，返回正常提示
+            e.printStackTrace();
+        }
+
+        return ResponseEntity.ok().body("上传成功");
+    }
+
+    // 定义接口类型和二级路径，完整的接口url是：/file/upload
+    @PostResource(path = "/uploads", name = "上传头像", description = "头像上传")
+    public void uploads(@RequestParam MultipartFile[] files) {
+        for (MultipartFile file : files) {
+            // 获取文件的名称
+            String fileName = file.getOriginalFilename();
+            try {
+                // 新建一个文件路径
+                File uploadFile = new File(BASE_DIR + fileName);
+                // 当父级目录不存在时，自动创建
+                if (!uploadFile.getParentFile().exists()) {
+                    uploadFile.getParentFile().mkdirs();
+                }
+                // 存储文件到电脑磁盘
+                file.transferTo(uploadFile);
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+    }
+
+
+    // 下载接口，url: /file/download?fileName=xxx
+
+    @GetMapping("/download1")
+    public void download1(@RequestParam String fileName, HttpServletResponse response) {
+        //  新建文件流，从磁盘读取文件流
+        try (FileInputStream fis = new FileInputStream(BASE_DIR + fileName);
+             BufferedInputStream bis = new BufferedInputStream(fis);
+             OutputStream os = response.getOutputStream()) {    //  OutputStream 是文件写出流，讲文件下载到浏览器客户端
+            // 新建字节数组，长度是文件的大小，比如文件 6kb, bis.available() = 1024 * 6
+            byte[] bytes = new byte[bis.available()];
+            // 从文件流读取字节到字节数组中
+            bis.read(bytes);
+            // 重置 response
+            response.reset();
+            // 设置 response 的下载响应头
+            response.setContentType("application/octet-stream");
+            response.setHeader("Content-disposition", "attachment;filename=" + URLEncoder.encode(fileName, StandardCharsets.UTF_8));  // 注意，这里要设置文件名的编码，否则中文的文件名下载后不显示
+            // 写出字节数组到输出流
+            os.write(bytes);
+            // 刷新输出流
+            os.flush();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+----
+
+== 文件夹上传
+
+[source,html]
+----
+<input type="file" multiple webkitdirectory />
+----
+
+== 限制可接受的文件类型
+
+[source,html]
+----
+<input type="file" multiple accept=".doc,.docx,.xml,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"/>
+----
+
+== 超大文件上传
+
+=== 分片上传
+
+.什么是分片上传
+分片上传，就是将所要上传的文件，按照一定的大小，将整个文件分隔成多个数据块（我们称之为Part）来进行分别上传，上传完之后再由服务端对所有上传的文件进行汇总整合成原始的文件。
+
+.分片上传的场景
+. 大文件上传
+. 网络环境环境不好，存在需要重传风险的场景
+
+=== 断点续传
+
+.什么是断点续传
+断点续传是在下载或上传时，将下载或上传任务（一个文件或一个压缩包）人为的划分为几个部分，每一个部分采用一个线程进行上传或下载，如果碰到网络故障，可以从已经上传或下载的部分开始继续上传或者下载未完成的部分，而没有必要从头开始上传或者下载。本文的断点续传主要是针对断点上传场景。
+
+.应用场景
+断点续传可以看成是分片上传的一个衍生，因此可以使用分片上传的场景，都可以使用断点续传。
+
+.实现断点续传的核心逻辑
+在分片上传的过程中，如果因为系统崩溃或者网络中断等异常因素导致上传中断，这时候客户端需要记录上传的进度。在之后支持再次上传时，可以继续从上次上传中断的地方进行继续上传。 为了避免客户端在上传之后的进度数据被删除而导致重新开始从头上传的问题，服务端也可以提供相应的接口便于客户端对已经上传的分片数据进行查询，从而使客户端知道已经上传的分片数据，从而从下一个分片数据开始继续上传。
+
+.实现流程步骤
+1、方案一，常规步骤
+
+将需要上传的文件按照一定的分割规则，分割成相同大小的数据块； 初始化一个分片上传任务，返回本次分片上传唯一标识； 按照一定的策略（串行或并行）发送各个分片数据块； 发送完成后，服务端根据判断数据上传是否完整，如果完整，则进行数据块合成得到原始文件。 2、方案二、本文实现的步骤
+
+前端（客户端）需要根据固定大小对文件进行分片，请求后端（服务端）时要带上分片序号和大小 服务端创建conf文件用来记录分块位置，conf文件长度为总分片数，每上传一个分块即向conf文件中写入一个127，那么没上传的位置就是默认的0,已上传的就是Byte.MAX_VALUE 127（这步是实现断点续传和秒传的核心步骤） 服务器按照请求数据中给的分片序号和每片分块大小（分片大小是固定且一样的）算出开始位置，与读取到的文件片段数据，写入文件。
+
+.分片上传/断点上传代码实现
+前端采用百度提供的webuploader的插件，进行分片。因本文主要介绍服务端代码实现，webuploader如何进行分片，具体实现可以查看如下链接: http://fex.baidu.com/webuploader/getting-started.html
+
+后端用两种方式实现文件写入，一种是用RandomAccessFile，如果对RandomAccessFile不熟悉的朋友，可以查看如下链接: https://blog.csdn.net/dimudan2015/article/details/81910690
+
+另一种是使用MappedByteBuffer，对MappedByteBuffer不熟悉的朋友，可以查看如下链接进行了解:
+https://www.jianshu.com/p/f90866dcbffc
+
+==== 后端进行写入操作的核心代码
+
+.RandomAccessFile实现方式
+[source,java]
+----
+@UploadMode(mode = UploadModeEnum.RANDOM_ACCESS)
+@Slf4j
+public class RandomAccessUploadStrategy extends SliceUploadTemplate {
+
+  @Autowired
+  private FilePathUtil filePathUtil;
+
+  @Value("${upload.chunkSize}")
+  private long defaultChunkSize;
+
+  @Override
+  public boolean upload(FileUploadRequestDTO param) {
+    RandomAccessFile accessTmpFile = null;
+    try {
+      String uploadDirPath = filePathUtil.getPath(param);
+      File tmpFile = super.createTmpFile(param);
+      accessTmpFile = new RandomAccessFile(tmpFile, "rw");
+      //这个必须与前端设定的值一致
+      long chunkSize = Objects.isNull(param.getChunkSize()) ? defaultChunkSize * 1024 * 1024 : param.getChunkSize();
+      long offset = chunkSize * param.getChunk();
+      //定位到该分片的偏移量
+      accessTmpFile.seek(offset);
+      //写入该分片数据
+      accessTmpFile.write(param.getFile().getBytes());
+      boolean isOk = super.checkAndSetUploadProgress(param, uploadDirPath);
+      return isOk;
+    } catch (IOException e) {
+      log.error(e.getMessage(), e);
+    } finally {
+      FileUtil.close(accessTmpFile);
+    }
+   return false;
+  }
+
+}
+----
+
+.MappedByteBuffer实现方式
+[source,java]
+----
+@UploadMode(mode = UploadModeEnum.MAPPED_BYTEBUFFER)
+@Slf4j
+public class MappedByteBufferUploadStrategy extends SliceUploadTemplate {
+
+  @Autowired
+  private FilePathUtil filePathUtil;
+
+  @Value("${upload.chunkSize}")
+  private long defaultChunkSize;
+
+  @Override
+  public boolean upload(FileUploadRequestDTO param) {
+
+    RandomAccessFile tempRaf = null;
+    FileChannel fileChannel = null;
+    MappedByteBuffer mappedByteBuffer = null;
+    try {
+      String uploadDirPath = filePathUtil.getPath(param);
+      File tmpFile = super.createTmpFile(param);
+      tempRaf = new RandomAccessFile(tmpFile, "rw");
+      fileChannel = tempRaf.getChannel();
+
+      long chunkSize = Objects.isNull(param.getChunkSize()) ? defaultChunkSize * 1024 * 1024
+          : param.getChunkSize();
+      //写入该分片数据
+      long offset = chunkSize * param.getChunk();
+      byte[] fileData = param.getFile().getBytes();
+      mappedByteBuffer = fileChannel
+.map(FileChannel.MapMode.READ_WRITE, offset, fileData.length);
+      mappedByteBuffer.put(fileData);
+      boolean isOk = super.checkAndSetUploadProgress(param, uploadDirPath);
+      return isOk;
+
+    } catch (IOException e) {
+      log.error(e.getMessage(), e);
+    } finally {
+
+      FileUtil.freedMappedByteBuffer(mappedByteBuffer);
+      FileUtil.close(fileChannel);
+      FileUtil.close(tempRaf);
+
+    }
+
+    return false;
+  }
+
+}
+----
+
+.文件操作核心模板类代码
+[source,java]
+----
+@Slf4j
+public abstract class SliceUploadTemplate implements SliceUploadStrategy {
+
+  public abstract boolean upload(FileUploadRequestDTO param);
+
+  protected File createTmpFile(FileUploadRequestDTO param) {
+
+    FilePathUtil filePathUtil = SpringContextHolder.getBean(FilePathUtil.class);
+    param.setPath(FileUtil.withoutHeadAndTailDiagonal(param.getPath()));
+    String fileName = param.getFile().getOriginalFilename();
+    String uploadDirPath = filePathUtil.getPath(param);
+    String tempFileName = fileName + "_tmp";
+    File tmpDir = new File(uploadDirPath);
+    File tmpFile = new File(uploadDirPath, tempFileName);
+    if (!tmpDir.exists()) {
+      tmpDir.mkdirs();
+    }
+    return tmpFile;
+  }
+
+  @Override
+  public FileUploadDTO sliceUpload(FileUploadRequestDTO param) {
+
+    boolean isOk = this.upload(param);
+    if (isOk) {
+      File tmpFile = this.createTmpFile(param);
+      FileUploadDTO fileUploadDTO = this.saveAndFileUploadDTO(param.getFile().getOriginalFilename(), tmpFile);
+      return fileUploadDTO;
+    }
+    String md5 = FileMD5Util.getFileMD5(param.getFile());
+
+    Map<Integer, String> map = new HashMap<>();
+    map.put(param.getChunk(), md5);
+    return FileUploadDTO.builder().chunkMd5Info(map).build();
+  }
+
+  /**
+   * 检查并修改文件上传进度
+   */
+  public boolean checkAndSetUploadProgress(FileUploadRequestDTO param, String uploadDirPath) {
+
+    String fileName = param.getFile().getOriginalFilename();
+    File confFile = new File(uploadDirPath, fileName + ".conf");
+    byte isComplete = 0;
+    RandomAccessFile accessConfFile = null;
+    try {
+      accessConfFile = new RandomAccessFile(confFile, "rw");
+      //把该分段标记为 true 表示完成
+      System.out.println("set part " + param.getChunk() + " complete");
+      //创建conf文件文件长度为总分片数，每上传一个分块即向conf文件中写入一个127，那么没上传的位置就是默认0,已上传的就是Byte.MAX_VALUE 127
+      accessConfFile.setLength(param.getChunks());
+      accessConfFile.seek(param.getChunk());
+      accessConfFile.write(Byte.MAX_VALUE);
+
+      //completeList 检查是否全部完成,如果数组里是否全部都是127(全部分片都成功上传)
+      byte[] completeList = FileUtils.readFileToByteArray(confFile);
+      isComplete = Byte.MAX_VALUE;
+      for (int i = 0; i < completeList.length && isComplete == Byte.MAX_VALUE; i++) {
+        //与运算, 如果有部分没有完成则 isComplete 不是 Byte.MAX_VALUE
+        isComplete = (byte) (isComplete & completeList[i]);
+        System.out.println("check part " + i + " complete?:" + completeList[i]);
+      }
+
+    } catch (IOException e) {
+      log.error(e.getMessage(), e);
+    } finally {
+      FileUtil.close(accessConfFile);
+    }
+ boolean isOk = setUploadProgress2Redis(param, uploadDirPath, fileName, confFile, isComplete);
+    return isOk;
+  }
+
+  /**
+   * 把上传进度信息存进redis
+   */
+  private boolean setUploadProgress2Redis(FileUploadRequestDTO param, String uploadDirPath,
+      String fileName, File confFile, byte isComplete) {
+
+    RedisUtil redisUtil = SpringContextHolder.getBean(RedisUtil.class);
+    if (isComplete == Byte.MAX_VALUE) {
+      redisUtil.hset(FileConstant.FILE_UPLOAD_STATUS, param.getMd5(), "true");
+      redisUtil.del(FileConstant.FILE_MD5_KEY + param.getMd5());
+      confFile.delete();
+      return true;
+    } else {
+      if (!redisUtil.hHasKey(FileConstant.FILE_UPLOAD_STATUS, param.getMd5())) {
+        redisUtil.hset(FileConstant.FILE_UPLOAD_STATUS, param.getMd5(), "false");
+        redisUtil.set(FileConstant.FILE_MD5_KEY + param.getMd5(),
+            uploadDirPath + FileConstant.FILE_SEPARATORCHAR + fileName + ".conf");
+      }
+
+      return false;
+    }
+  }
+/**
+   * 保存文件操作
+   */
+  public FileUploadDTO saveAndFileUploadDTO(String fileName, File tmpFile) {
+
+    FileUploadDTO fileUploadDTO = null;
+
+    try {
+
+      fileUploadDTO = renameFile(tmpFile, fileName);
+      if (fileUploadDTO.isUploadComplete()) {
+        System.out
+            .println("upload complete !!" + fileUploadDTO.isUploadComplete() + " name=" + fileName);
+        //TODO 保存文件信息到数据库
+
+      }
+
+    } catch (Exception e) {
+      log.error(e.getMessage(), e);
+    } finally {
+
+    }
+    return fileUploadDTO;
+  }
+/**
+   * 文件重命名
+   *
+   * @param toBeRenamed 将要修改名字的文件
+   * @param toFileNewName 新的名字
+   */
+  private FileUploadDTO renameFile(File toBeRenamed, String toFileNewName) {
+    //检查要重命名的文件是否存在，是否是文件
+    FileUploadDTO fileUploadDTO = new FileUploadDTO();
+    if (!toBeRenamed.exists() || toBeRenamed.isDirectory()) {
+      log.info("File does not exist: {}", toBeRenamed.getName());
+      fileUploadDTO.setUploadComplete(false);
+      return fileUploadDTO;
+    }
+    String ext = FileUtil.getExtension(toFileNewName);
+    String p = toBeRenamed.getParent();
+    String filePath = p + FileConstant.FILE_SEPARATORCHAR + toFileNewName;
+    File newFile = new File(filePath);
+    //修改文件名
+    boolean uploadFlag = toBeRenamed.renameTo(newFile);
+
+    fileUploadDTO.setMtime(DateUtil.getCurrentTimeStamp());
+    fileUploadDTO.setUploadComplete(uploadFlag);
+    fileUploadDTO.setPath(filePath);
+    fileUploadDTO.setSize(newFile.length());
+    fileUploadDTO.setFileExt(ext);
+    fileUploadDTO.setFileId(toFileNewName);
+
+    return fileUploadDTO;
+  }
+}
+----
+
+=== 秒传
+
+.什么是秒传
+通俗的说，你把要上传的东西上传，服务器会先做MD5校验，如果服务器上有一样的东西，它就直接给你个新地址，其实你下载的都是服务器上的同一个文件，想要不秒传，其实只要让MD5改变，就是对文件本身做一下修改（改名字不行），例如一个文本文件，你多加几个字，MD5就变了，就不会秒传了。
+
+.本文实现的秒传核心逻辑
+利用redis的set方法存放文件上传状态，其中key为文件上传的md5，value为是否上传完成的标志位。 当标志位true为上传已经完成，此时如果有相同文件上传，则进入秒传逻辑。如果标志位为false，则说明还没上传完成，此时需要在调用set的方法，保存块号文件记录的路径，其中key为上传文件md5加一个固定前缀，value为块号文件记录路径
+
+=== 总结
+
+在实现分片上传的过程，需要前端和后端配合，比如前后端的上传块号的文件大小，前后端必须得要一致，否则上传就会有问题。其次文件相关操作正常都是要搭建一个文件服务器的，比如使用fastdfs、hdfs等。
+
+本示例代码在电脑配置为4核内存8G情况下，上传24G大小的文件，上传时间需要30多分钟，主要时间耗费在前端的md5值计算，后端写入的速度还是比较快。
+
+如果项目组觉得自建文件服务器太花费时间，且项目的需求仅仅只是上传下载，那么推荐使用阿里的oss服务器，其介绍可以查看官网:
+
+https://help.aliyun.com/product/31815.html
+
+阿里的oss它本质是一个对象存储服务器，而非文件服务器，因此如果有涉及到大量删除或者修改文件的需求，oss可能就不是一个好的选择。
+
+== Spring Boot 中的文件下载：从单个文件到多个文件一次性下载，完美实现！
+
+本文介绍了 Spring Boot 应用中三种常见的文件下载场景，包括单个文件下载、使用 Gzip 压缩文件、一次性下载多个文件。对于单个文件下载，需要获取文件的大小和媒体类型，并使用 ContentDisposition 工具类构建 Content-Disposition 头，避免下载文件名称乱码的问题。对于使用 Gzip 压缩文件，需要告诉客户端文件使用了 gzip 编码，并在响应中使用 GZIPOutputStream进行压缩。对于一次性下载多个文件，需要把多个文件都打包到一个 zip 文件中，再响应给客户端，客户端可以自己解压 zip 文件来获取多个文件。
+
+=== 单个文件下载
+
+关键点如下： - 获取文件的大小。 - 获取文件的媒体类型(Content-Type)。 - 通过 ContentDisposition 工具类构建 Content-Disposition 头，避免下载文件名称乱码的问题。 - copy 数据到客户端。
+
+[source,java]
+----
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+@Controller
+@RequestMapping("/download")
+public class DownloadController {
+
+ @GetMapping
+ public void download (HttpServletRequest request, HttpServletResponse response) throws IOException {
+
+  // 要下载的文件
+  Path file = Paths.get("E:\\test.mp4");
+
+  // 获取文件的媒体类型
+  String contentType = Files.probeContentType(file);
+  if (contentType == null) {
+   // 如果获取失败，则使用通用的文件类型
+   contentType = MediaType.APPLICATION_OCTET_STREAM_VALUE;
+  }
+
+  response.setContentType(contentType);
+  // 文件大小
+  response.setContentLengthLong(Files.size(file));
+  /**
+   * 使用 ContentDisposition 构建 CONTENT_DISPOSITION 头，可以避免文件名称乱码的问题
+   */
+  response.setHeader(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()
+                   .filename(file.getFileName().toString(), StandardCharsets.UTF_8)
+                   .build()
+                   .toString());
+  // 响应数据给客户端
+  Files.copy(file, response.getOutputStream());
+ }
+}
+----
+
+=== 使用 Gzip 压缩文件
+
+如果下载的文件特别大的话，可以考虑使用 gzip 压缩后下载，可以减少传输字节，节省流量，但是因为使用 gzip 编码会耗费额外的 CPU。
+
+[source,java]
+----
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.zip.GZIPOutputStream;
+
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+@Controller
+@RequestMapping("/download")
+public class DownloadController {
+
+ @GetMapping("/gzip")
+ public void gzipDownload (HttpServletRequest request, HttpServletResponse response) throws IOException {
+
+  Path file = Paths.get("E:\\test.mp4");
+
+  String contentType = Files.probeContentType(file);
+  if (contentType == null) {
+   contentType = MediaType.APPLICATION_OCTET_STREAM_VALUE;
+  }
+
+  // 告诉客户端，文件使用了 gzip 编码，客户端会自动解码
+  response.setHeader(HttpHeaders.CONTENT_ENCODING, "gzip");
+  response.setContentType(contentType);
+  response.setHeader(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()
+                   .filename(file.getFileName().toString(), StandardCharsets.UTF_8)
+                   .build()
+                   .toString());
+
+  // 使用Gzip压缩后，响应给客户端
+  try(GZIPOutputStream gzipOutputStream = new GZIPOutputStream(response.getOutputStream())){
+   Files.copy(file, gzipOutputStream);
+  }
+ }
+}
+----
+
+=== 一次性下载多个文件
+
+如果需要一次性下载多个文件，那么需要服务器把多个文件都打包到一个 zip 文件中，再响应给客户端，客户端可以自己解压 zip 文件来获取多个文件。
+
+[source,java]
+----
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.stereotype.Controller;
+import org.springframework.util.StreamUtils;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+@Controller
+@RequestMapping("/download")
+public class DownloadController {
+ @GetMapping("/zip")
+ public void zipDownload (HttpServletRequest request, HttpServletResponse response) throws IOException {
+
+  // 要下载的文件列表
+  List<Path> files = Arrays.asList(Paths.get("E:\\test.mp4"),
+         Paths.get("E:\\node.txt"),
+         Paths.get("E:\\keys.txt"));
+
+
+  response.setContentType("application/zip"); // zip压缩
+  response.setHeader(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()
+                   .filename("download.zip", StandardCharsets.UTF_8)
+                   .build()
+                   .toString());
+
+  // 压缩多个文件到zip文件中，并且响应给客户端
+  try(ZipOutputStream zipOutputStream = new ZipOutputStream(response.getOutputStream())){
+   for (Path file : files) {
+    try (InputStream inputStream = Files.newInputStream(file)) {
+     zipOutputStream.putNextEntry(new ZipEntry(file.getFileName().toString()));
+     StreamUtils.copy(inputStream, zipOutputStream);
+     zipOutputStream.flush();
+    }
+   }
+  }
+ }
+}
+----
+

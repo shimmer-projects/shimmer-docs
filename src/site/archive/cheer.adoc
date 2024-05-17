@@ -1,0 +1,16 @@
+= Shimmer工程研发手册
+yu haiyang <yu_haiyang@foxmail.com>
+1.0, 2023-05-10: Shimmer
+:toc:
+:toclevels: 4
+:tabsize: 2
+:icons: font
+:url-quickref: https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/
+
+基于springboot3.0 + Java17开发的通用脚手架，包含开发一套系统的所有基础功能，让开发只关注业务。
+
+include::chapter/overview.adoc[leveloffset=+1]
+include::chapter/core.adoc[leveloffset=+1]
+include::chapter/specification.adoc[leveloffset=+1]
+include::chapter/exception.adoc[leveloffset=+1]
+include::chapter/git.adoc[leveloffset+=1]

@@ -1,0 +1,11 @@
+= overview
+
+- 包名规范
+. controller
+. service
+. repository
+. request # 请求对象
+. response # 响应对象
+. entity # 实体对象
+. domain # 领域对象
+. handle # 业务模型处理包
